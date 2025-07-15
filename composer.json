@@ -1,0 +1,16 @@
+{
+  "name": "webcito/bs-layer-slide-menu",
+  "description": "description",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "thomas",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+    "components/jquery": "^3",
+    "twbs/bootstrap": "^5"
+  }
+}
