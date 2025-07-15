@@ -18,6 +18,20 @@
 <script src="../dist/bs-layer.js"></script>
 <script>
     (function ($) {
+        function onLoadLogin($content) {
+            console.log('Content.html wurde geladen:', $content);
+            const $innerButtons = $content.find('[data-bs-toggle="layer"]');
+            $innerButtons.bsLayer({
+                url: 'register.html',
+                onLoad: function ($registerContent) {
+                }
+            });
+        }
+
+        $('[data-bs-toggle="layer"]').bsLayer({
+            url: 'content.html', // Erste Ebene lädt 'content.html'
+            onLoad: onLoadLogin
+        });
         $(document).on('show.bs.layer', '.bs-layer', function (e, $layer) {
             console.log('Das Menü wird geöffnet:', $layer);
         });
