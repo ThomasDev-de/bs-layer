@@ -1,7 +1,7 @@
 (function ($) {
     'use strict';
 
-    $.bsLayerSlideMenu = {
+    $.bsLayer = {
         defaults: {
             width: 50,       // Jeder neue Layer ist 85% so breit wie der vorherige
             animationDuration: 300,
@@ -10,59 +10,71 @@
         }
     };
 
+    const namespace = '.bs.layer';
+
     const layers = [];
     // Offene Layer zählen
     var openCount = 0;
 
     // Plugin Initialisierung
-    $.fn.bsLayerSlideMenu = function () {
+    $.fn.bsLayer = function () {
         if ($(this).length === 0) return;
         if ($(this).length > 1) return $(this).each(function () {
-            $(this).bsLayerSlideMenu();
+            $(this).bsLayer();
         });
 
         const layerButton = $(this);
-        const settingsBefore = layerButton.data('bsLayerSlideMenu') || layerButton.data() || {};
-        const newSettings = $.extend(true, {}, $.bsLayerSlideMenu.defaults, settingsBefore);
-        layerButton.data('bsLayerSlideMenu', newSettings);
+
+        const settingsBefore = layerButton.data('bsLayer') || layerButton.data() || {};
+        const newSettings = $.extend(true, {}, $.bsLayer.defaults, settingsBefore);
+        layerButton.data('bsLayer', newSettings);
         buildLayer(layerButton);
         return this;
     };
 
     function getSettings($btnLayer) {
-        return $btnLayer.data('bsLayerSlideMenu')
+        return $btnLayer.data('bsLayer')
     }
 
     function events() {
         // Öffnen
-        $(document).on('click', '[data-bs-toggle="layerSlideMenu"]', function (e) {
+        $(document).on('click'+namespace, '[data-bs-toggle="layer"]', function (e) {
             e.preventDefault();
             const btn = $(e.currentTarget);
-            btn.bsLayerSlideMenu();
+            btn.bsLayer();
         });
 
         // Schließen (immer nur das oberste)
-        $(document).on('click', '[data-bs-dismiss="layerSlideMenu"]', function (e) {
+        $(document).on('click'+namespace, '[data-bs-dismiss="layer"]', function (e) {
             e.preventDefault();
             closeTopMenu();
         });
         // Backdrop-Klick: nur wenn Option nicht 'static'
-        $(document).on('click', '#layerSlideBackdrop', function (e) {
-            const backdropOpt = $.bsLayerSlideMenu.defaults.backdrop;
-            if (backdropOpt === 'static') {
-                // Ignorieren!
-                return;
-            }
+        $(document).on('click' + namespace, '#layerBackdrop', function (e) {
             e.preventDefault();
-            closeTopMenu();
+
+            // Prüfen, ob gerade eine Animation läuft
+            if (isAnimating || $('.bs-layer.sliding').length) {
+                return; // Noch in Animation, keine weitere Aktion ausführen
+            }
+
+            const backdropOpt = $.bsLayer.defaults.backdrop;
+            if (backdropOpt === 'static') {
+                return; // Keine Aktion bei statischem Backdrop
+            }
+
+            closeTopMenu(); // Sicherstellen, dass die Animation nur einmal ausgeführt wird
         });
 
         // ESC schließt nur das oberste Menü (optional: ESC auch ignorieren bei static)
-        $(document).on('keydown', function (e) {
+        $(document).on('keydown'+namespace, function (e) {
             if (e.key === "Escape") {
                 // ESC sperren, wenn backdrop 'static'
-                const backdropOpt = $.bsLayerSlideMenu.defaults.backdrop;
+                const backdropOpt = $.bsLayer.defaults.backdrop;
                 if (backdropOpt === 'static') return;
+                if($('.bs-layer.sliding').length) {
+                    return;
+                }
                 closeTopMenu();
             }
         });
@@ -78,7 +90,7 @@
     }
 
     function getCurrentWidth($btnLayer) {
-        const settings = $.bsLayerSlideMenu.defaults;
+        const settings = $.bsLayer.defaults;
         const countOpenLayers = layers.length;
         const winWidth = $(window).width();
 
@@ -98,7 +110,7 @@
     }
 
     function getCurrentZIndex($btnLayer) {
-        const settings = $.bsLayerSlideMenu.defaults;
+        const settings = $.bsLayer.defaults;
         const countOpenLayers = layers.length;
         return 1050 + countOpenLayers;
     }
@@ -109,7 +121,15 @@
         const width = getCurrentWidth($btnLayer);
         const zIndex = getCurrentZIndex($btnLayer);
 
-        $menu.addClass('position-fixed top-0 h-100 shadow-lg bg-white rounded-start-5 bs-layer-slide-menu')
+        let target;
+        if($btnLayer.is('a')) {
+            target = $btnLayer.attr('href');
+        } else if($btnLayer.is('button')) {
+            target = $btnLayer.attr('data-bs-target');
+        }
+
+        $menu.addClass('position-fixed top-0 h-100 shadow bg-white rounded-start-5 bs-layer sliding')
+
             .css({
                 width: width + 'px',
                 right: '-' + width + 'px',
@@ -117,18 +137,18 @@
                 opacity: .95,
                 transition: 'right ' + options.animationDuration + 'ms',
                 display: 'block',
-                borderLeft: '5px solid rgba(120,160,255,0.60)',
                 backdropFilter: 'blur(15px) saturate(170%)',
                 WebkitBackdropFilter: 'blur(15px) saturate(170%)',
             })
+            .attr('id', target)
             .attr('aria-modal', 'true')
             .attr('role', 'layer');
 
         $menu.append(
-            $('<button type="button" class="btn-close position-absolute top-0 end-0 m-3" aria-label="Close" data-bs-dismiss="layerSlideMenu" style="filter: invert(1) grayscale(1) brightness(0.2);"></button>')
+            $('<button type="button" class="btn-close position-absolute top-0 end-0 m-3" aria-label="Close" data-bs-dismiss="layer" style="filter: invert(1) grayscale(1) brightness(0.2);"></button>')
         );
         $menu.append(
-            $('<a href="#" data-bs-toggle="layerSlideMenu" class="btn btn-primary mt-5 ms-4">Weiteres Menü öffnen</a>')
+            $('<a href="#" data-bs-toggle="layer" class="btn btn-primary mt-5 ms-4">Open another layer</a>')
         );
 
         // Reflow/Animation
@@ -142,20 +162,14 @@
 
         // BACKDROP LOGIK
         if (options.backdrop) {
-            // es gibt immer nur EIN backdrop!
-            let $backdrop = $('#layerSlideBackdrop');
-
-            // wenn nicht vorhanden, anlegen
+            let $backdrop = $('#layerBackdrop');
             if ($backdrop.length === 0) {
-                $backdrop = $('<div id="layerSlideBackdrop" class="modal-backdrop fade show"></div>')
+                $backdrop = $('<div id="layerBackdrop" class="modal-backdrop fade show"></div>')
                     .appendTo('body');
             } else {
-                // am DOM-Ende sicherstellen, falls Layer entfernt wurde
                 $backdrop.appendTo('body');
             }
-
-            // Z-Index: eine Stufe unter dem neuesten Menü, aber über dem darunterliegenden Layer/Menu
-            let backdropZ = zIndex - 1;
+            const backdropZ = zIndex - 1;
             $backdrop.css({ zIndex: backdropZ });
         }
 
@@ -163,43 +177,68 @@
         if (openCount === 1) {
             $('body').addClass('overflow-hidden');
         }
+
+        // Event vor dem Anzeigen auslösen
+        $menu.trigger('show'+namespace, [$menu]);
+        // Event nach komplettem Öffnen auslösen
+        setTimeout(() => {
+            $menu.removeClass('sliding');
+            $menu.trigger('shown'+namespace , [$menu]);
+        }, options.animationDuration);
     }
+    let isAnimating = false;
+
     function closeTopMenu() {
-        const settings = $.bsLayerSlideMenu.defaults;
+        if (isAnimating) return; // Abbrechen, wenn eine Animation bereits läuft
+        isAnimating = true;      // Flag setzen, um Animation zu blockieren
+
+        const settings = $.bsLayer.defaults;
         var $topMenu = layers[layers.length - 1];
         var width = $topMenu && $topMenu.outerWidth ? $topMenu.outerWidth() : 0;
+
+        // Event vor dem Schließen auslösen
+        if ($topMenu) {
+            $topMenu.trigger('hide'+namespace);
+        }
 
         // --- BACKDROP zuerst verschieben ---
         if (settings.backdrop) {
             if (layers.length === 1) {
-                // Letztes Menü: sofort entfernen
-                $('#layerSlideBackdrop').remove();
+                $('#layerBackdrop').remove();
             } else if (layers.length > 1) {
-                // Sonst: nur wenn noch ein darunterliegender Layer existiert!
                 const $underLayer = layers[layers.length - 2];
                 const zIndex = $underLayer && $underLayer.css
                     ? (parseInt($underLayer.css('z-index'), 10) || 1050)
                     : 1050;
-                $('#layerSlideBackdrop').css({ zIndex: zIndex - 1 });
+                $('#layerBackdrop').css({ zIndex: zIndex - 1 });
             }
         }
 
         // Menü animiert schließen
         if ($topMenu && $topMenu.css) {
             $topMenu.css('right', '-' + width + 'px');
+            $topMenu.addClass('sliding');
+
             setTimeout(function() {
                 $topMenu.hide(function() {
-                    $topMenu.remove();
-                    layers.pop();
+                    $topMenu.trigger('hidden'+namespace); // Event nach vollständigem Schließen auslösen
+                    $topMenu.remove(); // Layer aus DOM entfernen
+
+                    layers.pop(); // Layer aus dem Stack entfernen
                     if (layers.length) {
                         layers[layers.length - 1].removeClass('overflow-hidden');
                     }
+
+                    isAnimating = false; // Animation abgeschlossen
                 });
+
                 openCount--;
                 if (openCount === 0) {
                     $('body').removeClass('overflow-hidden');
                 }
             }, settings.animationDuration);
+        } else {
+            isAnimating = false;
         }
     }
 

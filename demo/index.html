@@ -1,18 +1,39 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$.fn.bsLayerSlideMenu</title>
+    <title>$.fn.bsLayer</title>
     <link href="../vendor/twbs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container py-5">
-    <h1>$.fn.bsLayerSlideMenu</h1>
-    <a data-bs-toggle="layerSlideMenu" href="#slide-menu" class="btn btn-primary">Toggle slide menu</a>
+    <h1>$.fn.bsLayer</h1>
+    <a data-bs-toggle="layer" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
+    <button data-bs-toggle="layer" data-bs-target="#slide_menu" class="btn btn-primary">Open a layer via button</button>
 </div>
+
 <script src="../vendor/components/jquery/jquery.min.js"></script>
 <script src="../vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../dist/bs-layer-slide-menu.js"></script>
+<script src="../dist/bs-layer.js"></script>
+<script>
+    (function ($) {
+        $(document).on('show.bs.layer', '.bs-layer', function (e, $layer) {
+            console.log('Das Menü wird geöffnet:', $layer);
+        });
+
+        $(document).on('shown.bs.layer', '.bs-layer', function (e, $layer) {
+            console.log('Das Menü wurde geöffnet:', $layer);
+        });
+        $(document).on('hide.bs.layer', '.bs-layer', function (e, $layer) {
+            console.log('Das Menü wird geschlossen:', $layer);
+        });
+
+        $(document).on('hidden.bs.layer', '.bs-layer', function (e) {
+            console.log('Das Menü wurde geschlossen');
+        });
+
+    }(jQuery));
+</script>
 </body>
 </html>
