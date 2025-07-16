@@ -20,16 +20,19 @@ Supports stacking multiple layers, custom AJAX content, animation, and full keyb
 
 ## Installation
 
-Install with Composer (Bootstrap 5 & jQuery must be present):
+Install with Composer (Bootstrap 5, Bootstrap-Icons & jQuery must be present):
 
 ```
-composer require twbs/bootstrap components/jquery
+composer require twbs/bootstrap twbs/bootstrap-icons components/jquery
 ```
 
 **Or include JS/CSS manually:**
 
 ```html
+<link href="vendor/twbs/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="vendor/twbs/bootstrap/dist/css/bootstrap.min.css">
+
+
 <script src="vendor/components/jquery/jquery.min.js"></script>
 <script src="vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="dist/bs-layer.js"></script>
@@ -89,7 +92,7 @@ $.bsLayer.closeAll();
 
 ## Configuration
 
-All config and defaults via `$.bsLayer.config` and `$.bsLayer.defaults`:
+All configs and defaults via `$.bsLayer.config` and `$.bsLayer.defaults`:
 
 <details>
 <summary>Click for config reference</summary>
@@ -100,7 +103,12 @@ $.bsLayer = {
         distanceBetweenLayers: 100,     // px distance offset (visually stacks)
         animationDuration: 400,         // ms, animation duration
         zIndexStart: 1050,              // base z-index
-        parent: 'body'                  // where layers will be appended
+        parent: 'body',                  // where layers will be appended
+        icons: {
+            close: 'bi bi-x-lg',
+            maximize: 'bi bi-arrows-angle-expand',
+            minimize: 'bi bi-arrows-angle-contract',
+        }
     },
     defaults: {
         width: undefined,               // custom width
