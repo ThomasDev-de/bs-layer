@@ -275,14 +275,16 @@
             return winWidth;
         }
 
+        if (settings.width) {
+            return settings.width;
+        }
+
         // First menu: 80% of the window width (you can also set, if desired)
         if (countOpenLayers === 1) {
             return Math.round(winWidth * 0.8);
         }
 
-        if (settings.width) {
-            return settings.width;
-        }
+
         const prevWidth = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2].width ?
             $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2].width() : Math.round(winWidth * 0.8);
         return Math.max(prevWidth - config.distanceBetweenLayers, 576);
