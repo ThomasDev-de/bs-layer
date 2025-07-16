@@ -201,8 +201,6 @@
     }
 
     function globalEvents() {
-
-
         // Schließen (immer nur das oberste)
         $(document)
             .on('click' + namespace, '.bs-layer .btn-toggle-full-width', function (e) {
@@ -230,12 +228,15 @@
                 e.preventDefault();
 
                 // Prüfen, ob gerade eine Animation läuft
-                if ($.bsLayer.vars.isAnimating || $('.bs-layer.sliding').length) {
+                if ($.bsLayer.vars.isAnimating) {
                     return; // Noch in Animation, keine weitere Aktion ausführen
                 }
 
-                const backdropOpt = $.bsLayer.defaults.backdrop;
-                if (backdropOpt === 'static') {
+                const latestLayer = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+                const btnLayer = latestLayer.data('controller');
+                const settings = getSettings(btnLayer);
+
+                if (settings.backdrop === 'static') {
                     return; // Keine Aktion bei statischem Backdrop
                 }
 
