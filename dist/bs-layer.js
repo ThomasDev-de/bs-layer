@@ -134,7 +134,6 @@
         }
 
         if (!$.bsLayer.vars.registerGlobalLayerEvents) {
-
             globalEvents();
             $.bsLayer.vars.registerGlobalLayerEvents = true;
         }
@@ -339,6 +338,9 @@
     function getOrCreateTarget($btnLayerElement) {
         const $btnLayer = $($btnLayerElement);
         let target;
+        if (! $btnLayer.attr('data-bs-toggle')) {
+            $btnLayer.attr('data-bs-toggle', 'layer');
+        }
         if ($btnLayer.is('a')) {
             let href = $btnLayer.attr('href');
             if ($.bsLayer.utils.isValueEmpty(href) || href === '#') {
