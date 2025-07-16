@@ -399,6 +399,7 @@
         let target = getOrCreateTarget($btnLayer);
         const animationDuration = config.animationDuration;
         const $menu = $('<div>', {
+            'data-bs-theme': 'light',
             id: target,
             html: getTemplate($btnLayer)
         }).appendTo(config.parent);
@@ -409,7 +410,7 @@
         const width = getCurrentWidth($btnLayer);
         const zIndex = getCurrentZIndex();
         $menu
-            .addClass('position-fixed top-0 h-100 rounded-start-5 bs-layer sliding')
+            .addClass('position-fixed text-dark top-0 h-100 rounded-start-5 bs-layer sliding')
             .css({
                 width: width + 'px',
                 right: '-' + width + 'px',
