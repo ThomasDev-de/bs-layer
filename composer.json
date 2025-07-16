@@ -1,16 +1,28 @@
 {
-  "name": "webcito/bs-layer-slide-menu",
-  "description": "description",
-  "minimum-stability": "stable",
-  "license": "proprietary",
+  "name": "webcito/bs-layer",
+  "description": "A lightweight sliding layer system for jQuery and Bootstrap 5.",
+  "version": "1.0.0",
+  "type": "library",
+  "keywords": [
+    "bootstrap",
+    "jquery",
+    "layer"
+  ],
+  "homepage": "https://github.com/webcito/bs-layer",
+  "license": "MIT",
   "authors": [
     {
-      "name": "thomas",
-      "email": "email@example.com"
+      "name": "Thomas",
+      "email": "t.kirsch@webcito.de"
     }
   ],
   "require": {
     "components/jquery": "^3",
     "twbs/bootstrap": "^5"
+  },
+  "minimum-stability": "stable",
+  "support": {
+    "issues": "https://github.com/webcito/bs-layer/issues",
+    "source": "https://github.com/webcito/bs-layer"
   }
 }

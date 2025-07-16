@@ -9,8 +9,7 @@
 <body>
 <div class="container py-5">
     <h1>$.fn.bsLayer</h1>
-    <a data-bs-toggle="layer" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
-    <button data-bs-toggle="layer" data-bs-target="#slide_menu" class="btn btn-primary">Open a layer via button</button>
+    <a data-bs-toggle="layer" data-url="login.html" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
 </div>
 
 <script src="../vendor/components/jquery/jquery.min.js"></script>
@@ -19,33 +18,27 @@
 <script>
     (function ($) {
         function onLoadLogin($content) {
-            console.log('Content.html wurde geladen:', $content);
             const $innerButtons = $content.find('[data-bs-toggle="layer"]');
             $innerButtons.bsLayer({
-                url: 'register.html',
+
                 onLoad: function ($registerContent) {
-                }
+                },
+
             });
         }
 
-        $('[data-bs-toggle="layer"]').bsLayer({
-            url: 'content.html', // Erste Ebene lädt 'content.html'
-            onLoad: onLoadLogin
-        });
-        $(document).on('show.bs.layer', '.bs-layer', function (e, $layer) {
-            console.log('Das Menü wird geöffnet:', $layer);
-        });
-
-        $(document).on('shown.bs.layer', '.bs-layer', function (e, $layer) {
-            console.log('Das Menü wurde geöffnet:', $layer);
-        });
-        $(document).on('hide.bs.layer', '.bs-layer', function (e, $layer) {
-            console.log('Das Menü wird geschlossen:', $layer);
+        const loginLayer = $('[data-bs-toggle="layer"]').bsLayer({
+            // url: 'login.html', // Erste Ebene lädt 'content.html'
+            onLoad: onLoadLogin,
+            onAll(eventName, ...params) {
+                console.log(eventName, params);
+            }
         });
 
-        $(document).on('hidden.bs.layer', '.bs-layer', function (e) {
-            console.log('Das Menü wurde geschlossen');
-        });
+        setTimeout(function(){
+            $.bsLayer.closeAll();
+        },5000)
+
 
     }(jQuery));
 </script>
