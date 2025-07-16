@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$.fn.bsLayer</title>
+    <link href="../vendor/twbs/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="../vendor/twbs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -20,24 +21,24 @@
         function onLoadLogin($content) {
             const $innerButtons = $content.find('[data-bs-toggle="layer"]');
             $innerButtons.bsLayer({
-
+                title: 'Register',
                 onLoad: function ($registerContent) {
+                    const $innerButtonP = $registerContent.find('[data-bs-toggle="layer"]');
+                    $innerButtonP.bsLayer({
+                        title: 'Policy',
+                        width: 400,
+                    });
                 },
-
             });
         }
 
-        const loginLayer = $('[data-bs-toggle="layer"]').bsLayer({
-            // url: 'login.html', // Erste Ebene lädt 'content.html'
+        $('[data-bs-toggle="layer"]').bsLayer({
+            title: 'Login',
             onLoad: onLoadLogin,
             onAll(eventName, ...params) {
                 console.log(eventName, params);
             }
         });
-
-        setTimeout(function(){
-            $.bsLayer.closeAll();
-        },5000)
 
 
     }(jQuery));

@@ -18,7 +18,8 @@
   ],
   "require": {
     "components/jquery": "^3",
-    "twbs/bootstrap": "^5"
+    "twbs/bootstrap": "^5",
+    "twbs/bootstrap-icons": "^1"
   },
   "minimum-stability": "stable",
   "support": {

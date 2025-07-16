@@ -15,8 +15,14 @@
             animationDuration: 400,
             zIndexStart: 1050,
             parent: 'body',
+            icons: {
+                close: 'bi bi-x-lg',
+                maximize: 'bi bi-arrows-angle-expand',
+                minimize: 'bi bi-arrows-angle-contract',
+            }
         },
         defaults: {
+            title: null,
             width: undefined,
             backdrop: 'static',
             url: null,
@@ -185,7 +191,6 @@
     }
 
     function btnEvents($btnLayer) {
-        const settings = getSettings($btnLayer);
         $btnLayer.on('click' + namespace, function (e) {
             e.preventDefault();
             if ($.bsLayer.vars.isAnimating || $('.bs-layer.sliding').length) {
@@ -199,26 +204,43 @@
 
 
         // Schließen (immer nur das oberste)
-        $(document).on('click' + namespace, '[data-bs-dismiss="layer"]', function (e) {
-            e.preventDefault();
-            close();
-        });
-        // Backdrop-Klick: nur wenn Option nicht 'static'
-        $(document).on('click' + namespace, '#layerBackdrop', function (e) {
-            e.preventDefault();
+        $(document)
+            .on('click' + namespace, '.bs-layer .btn-toggle-full-width', function (e) {
+                e.preventDefault();
+                const $layer = $(e.currentTarget).closest('.bs-layer');
+                const config = $.bsLayer.getConfig();
+                const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width i');
+                $layer.toggleClass('w-100');
+                $layerMaxMinBtn
+                    .removeClass(config.icons.maximize)
+                    .removeClass(config.icons.minimize);
+                if ($layer.hasClass('w-100')) {
+                    $layer.removeClass('rounded-start-5');
+                    $layerMaxMinBtn.addClass(config.icons.minimize);
+                } else {
+                    $layer.addClass('rounded-start-5');
+                    $layerMaxMinBtn.addClass(config.icons.maximize);
+                }
+            })
+            .on('click' + namespace, '[data-bs-dismiss="layer"]', function (e) {
+                e.preventDefault();
+                close();
+            })
+            .on('click' + namespace, '#layerBackdrop', function (e) {
+                e.preventDefault();
 
-            // Prüfen, ob gerade eine Animation läuft
-            if ($.bsLayer.vars.isAnimating || $('.bs-layer.sliding').length) {
-                return; // Noch in Animation, keine weitere Aktion ausführen
-            }
+                // Prüfen, ob gerade eine Animation läuft
+                if ($.bsLayer.vars.isAnimating || $('.bs-layer.sliding').length) {
+                    return; // Noch in Animation, keine weitere Aktion ausführen
+                }
 
-            const backdropOpt = $.bsLayer.defaults.backdrop;
-            if (backdropOpt === 'static') {
-                return; // Keine Aktion bei statischem Backdrop
-            }
+                const backdropOpt = $.bsLayer.defaults.backdrop;
+                if (backdropOpt === 'static') {
+                    return; // Keine Aktion bei statischem Backdrop
+                }
 
-            close(); // Sicherstellen, dass die Animation nur einmal ausgeführt wird
-        });
+                close(); // Sicherstellen, dass die Animation nur einmal ausgeführt wird
+            });
 
         // ESC schließt nur das oberste Menü (optional: ESC auch ignorieren bei static)
         $(document).on('keydown' + namespace, function (e) {
@@ -235,6 +257,13 @@
 
     }
 
+    /**
+     * Determines and returns the appropriate width for the current layer based on various conditions such as window size,
+     * open layers count, and previously configured layer settings.
+     *
+     * @param {jQuery} $btnLayer - A jQuery object representing the layer button for which the width is being calculated.
+     * @return {number} The calculated width for the current layer in pixels.
+     */
     function getCurrentWidth($btnLayer) {
         const settings = getSettings($btnLayer);
         const config = $.bsLayer.getConfig();
@@ -243,11 +272,10 @@
 
         // Bootstrap sm breakpoint: 576px
         if (winWidth < 576) {
-            // Volle Fensterbreite auf XS
             return winWidth;
         }
 
-        // Erstes Menü: 80% der Fensterbreite (kannst du auch fest setzen, falls gewünscht)
+        // First menu: 80% of the window width (you can also set, if desired)
         if (countOpenLayers === 1) {
             return Math.round(winWidth * 0.8);
         }
@@ -260,7 +288,7 @@
         return Math.max(prevWidth - config.distanceBetweenLayers, 576);
     }
 
-    function getCurrentZIndex($btnLayer) {
+    function getCurrentZIndex() {
         const config = $.bsLayer.getConfig();
         const countOpenLayers = $.bsLayer.vars.openLayers.length;
         return config.zIndexStart + countOpenLayers;
@@ -277,19 +305,24 @@
     }
 
     function getTemplate($btnLayer) {
+        const config = $.bsLayer.getConfig();
         const settings = getSettings($btnLayer);
         const closeableBtn = !settings.closeable ? '' : [
-            '<button type="button" class="btn-close" data-bs-dismiss="layer" aria-label="Close" style="filter: invert(1) grayscale(1) brightness(0.2);"></button>',
+            `<button type="button" class="btn" data-bs-dismiss="layer"><i class="${config.icons.close}"></i></button>`,
         ].join('');
+        const maxMinBtn = !settings.closeable ? '' : [
+            `<button type="button" class="btn btn-toggle-full-width"><i class="${config.icons.maximize}"></i></button>`,
+        ].join('');
+
         return [
-            // Oberstes Container-Div mit flexiblen Eigenschaften
             '<div class="d-flex flex-column align-items-stretch h-100 w-100">',
-            // Layer-Header mit Titel und Schließen-Button
             '<div class="layer-header d-flex flex-nowrap justify-content-between align-items-center p-3">',
-            '<h5 class="layer-title"></h5>',
+            `<h5 class="layer-title">${settings.title || ''}</h5>`,
+            '<div class="btn-group">',
+            maxMinBtn,
             closeableBtn,
             '</div>',
-            // Hauptinhalt des Layers
+            '</div>',
             '<div class="layer-body p-3 flex-fill overflow-y-auto"></div>',
             '</div>',
         ].join('');
@@ -299,10 +332,11 @@
      * Ensures the element has a valid target and returns the plain target string (without the hash).
      * For <a>: ensures href="#id"
      * For <button>: ensures data-bs-target="#id"
-     * @param {jQuery} $btnLayer - The jQuery element (link or button) to process.
+     * @param {jQuery} $btnLayerElement - The jQuery element (link or button) to process.
      * @returns {string} The target id (without #)
      */
-    function getOrCreateTarget($btnLayer) {
+    function getOrCreateTarget($btnLayerElement) {
+        const $btnLayer = $($btnLayerElement);
         let target;
         if ($btnLayer.is('a')) {
             let href = $btnLayer.attr('href');
@@ -332,6 +366,29 @@
         return target;
     }
 
+
+    /**
+     * Handles the content of a given layer by updating its body with new content
+     * and triggering a 'load' event on the specified button layer.
+     *
+     * @param {jQuery} $btnLayer - The jQuery object representing the button layer.
+     * @param {jQuery} $layerBody - The jQuery object representing the layer body to update.
+     * @param {string} res - The response string containing the new content to be inserted into the layer body.
+     * @return {void} This function does not return a value.
+     */
+    function handleLayerContent($btnLayer, $layerBody, res) {
+        const $content = $(res);
+        $($layerBody).empty().append($content);
+        triggerEvent($btnLayer, 'load', $content);
+    }
+
+    /**
+     * Opens a new layer or modal associated with the specified button element. Handles animations, AJAX content loading,
+     * and layer configurations, such as backdrops, z-index, and content insertion.
+     *
+     * @param {jQuery} $btnLayer The button or trigger element that will control this layer opening.
+     * @return {void} Does not return a value. The method modifies the DOM and application state directly.
+     */
     function open($btnLayer) {
         if ($.bsLayer.vars.isAnimating) {
             return;
@@ -350,7 +407,7 @@
         $.bsLayer.vars.openLayers.push($menu);
 
         const width = getCurrentWidth($btnLayer);
-        const zIndex = getCurrentZIndex($btnLayer);
+        const zIndex = getCurrentZIndex();
         $menu
             .addClass('position-fixed top-0 h-100 rounded-start-5 bs-layer sliding')
             .css({
@@ -360,11 +417,10 @@
                 transition: 'right ' + animationDuration + 'ms',
                 display: 'block',
                 background: 'rgba(255, 255, 255, 0.74)',
-                borderRadius: '16px',
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 16px 80px rgba(0, 0, 0, 0.7)',
                 backdropFilter: 'blur(9.1px)',
                 WebkitBackdropFilter: 'blur(9.1px)',
-                border: '1px solid rgba(255, 255, 255, 1)'
+                // border: '1px solid rgba(255, 255, 255, 1)'
             })
             .attr('aria-modal', 'true')
             .attr('role', 'layer');
@@ -375,20 +431,31 @@
         // If a URL is set, load content via AJAX and insert into the layer
         if (settings.url) {
             const query = typeof settings.queryParams === 'function' ? settings.queryParams() : {};
-            $.ajax({
-                url: settings.url, // URL to load content from
-                type: 'GET',
-                data: query, // Optional: query parameter pairs
-                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-                success: function (res) {
-                    const $content = $(res);
-                    layerBody.empty().append($content);
-                    triggerEvent($btnLayer, 'load', $content);
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error loading URL:', error);
-                }
-            });
+
+            // Jetzt immer als Promise behandeln!
+            let promise;
+            if (typeof settings.url === 'function') {
+                promise = $.bsLayer.utils.executeFunction(query);
+            } else {
+                promise = $.ajax({
+                    url: settings.url,
+                    type: 'GET',
+                    data: query,
+                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+                });
+            }
+
+            if (promise && typeof promise.then === 'function') {
+                promise
+                    .then(function (res) {
+                        handleLayerContent($btnLayer, layerBody, res);
+                    })
+                    .catch(function (error) {
+                        console.error('Error loading the layer:', error);
+                    });
+            } else {
+                console.error('Settings.url must either be a function with a promise or a string url!');
+            }
         }
 
         // Animate in
@@ -428,11 +495,18 @@
             triggerEvent($btnLayer, 'shown', $menu);
             $menu.removeClass('sliding');
             $menu.addClass('show');
-            $btnLayer.data('layer', $menu);
+            $($btnLayer).data('layer', $menu);
             $.bsLayer.vars.isAnimating = false;
         }, animationDuration);
     }
 
+    /**
+     * Closes the currently active layer with an animation and removes it from the DOM.
+     * Adjusts the backdrop and updates the layer stack accordingly.
+     * Ensures only one layer is animated at a time.
+     *
+     * @return {void} This function does not return a value.
+     */
     function close() {
         if ($.bsLayer.vars.isAnimating) {
             return;
@@ -488,25 +562,29 @@
     }
 
     /**
-     * Schliesst alle offenen Layer nacheinander animiert (rückwärts).
+     * Closes all open layers sequentially. The method ensures that animations for closing
+     * layers do not overlap. If another closing animation is already running or no layers are open,
+     * it exits without performing any actions.
+     *
+     * @return {void} This method does not return any value.
      */
     function closeAll() {
         const vars = $.bsLayer.vars;
-        // Wenn bereits eine Animation läuft, nicht doppelt starten
         if (vars.isAnimating || !vars.openLayers.length) {
             return;
         }
 
+        /**
+         * Closes the next open layer in a sequence. If there are multiple open layers,
+         * this function ensures they are closed one by one, waiting for any ongoing animations
+         * to complete before proceeding to the next layer.
+         *
+         * @return {void} Does not return a value.
+         */
         function closeNext() {
             if (!vars.openLayers.length) return;
-
-            // Layer wird bereits im Stack-ele letzten geschlossen
             close();
-            // Callback im close() einhängen: wenn close() fertig ist, closeNext() wieder aufrufen
-            // close() setzt isAnimating am Ende auf false, daher muss Polling verwendet werden,
-            // falls close keine Callback-Unterstützung hat:
             if (vars.openLayers.length > 0) {
-                // Warte bis die aktuelle Animation durch ist, dann nächsten schließen
                 setTimeout(function waitAndClose() {
                     if (!vars.isAnimating) {
                         closeNext();
@@ -522,10 +600,12 @@
     }
 
     /**
-     * Zentraler Timeout für bsLayer
-     * Führt callback sofort aus, wenn $.bsLayer.immediate true ist, sonst wie setTimeout.
-     * @param {function} callback
-     * @param {number} duration
+     * Executes a callback function after a specified duration unless certain conditions are met.
+     * If the `immediate` flag is set or the duration is 0, the callback is executed immediately.
+     *
+     * @param {Function} callback - The function to be executed after the timeout or immediately.
+     * @param {number} duration - The duration (in milliseconds) to wait before executing the callback.
+     * @return {number|null} Returns a timeout ID if a timeout is set, or null if the callback is executed immediately.
      */
     function bsLayerTimeout(callback, duration) {
         if ($.bsLayer.vars.immediate || duration === 0) {
