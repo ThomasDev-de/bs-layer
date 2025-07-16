@@ -24,7 +24,7 @@
         defaults: {
             title: null,
             width: undefined,
-            backdrop: 'static',
+            backdrop: true,
             url: null,
             closeable: true,
             queryParams(params) {
@@ -226,21 +226,19 @@
             })
             .on('click' + namespace, '#layerBackdrop', function (e) {
                 e.preventDefault();
-
-                // Prüfen, ob gerade eine Animation läuft
                 if ($.bsLayer.vars.isAnimating) {
-                    return; // Noch in Animation, keine weitere Aktion ausführen
+                    return;
                 }
 
                 const latestLayer = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
                 const btnLayer = latestLayer.data('controller');
                 const settings = getSettings(btnLayer);
 
-                if (settings.backdrop === 'static') {
-                    return; // Keine Aktion bei statischem Backdrop
+                if (settings.backdrop === 'static' || !settings.backdrop) {
+                    return;
                 }
 
-                close(); // Sicherstellen, dass die Animation nur einmal ausgeführt wird
+                close();
             });
 
         // ESC schließt nur das oberste Menü (optional: ESC auch ignorieren bei static)
