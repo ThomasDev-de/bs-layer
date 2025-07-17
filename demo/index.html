@@ -10,7 +10,7 @@
 <body>
 <div class="container py-5">
     <h1>$.fn.bsLayer</h1>
-    <a data-bs-toggle="layer" data-url="login.html" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
+    <a id="btnLayerLogin" data-url="login.html" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
 </div>
 
 <script src="../vendor/components/jquery/jquery.min.js"></script>
@@ -18,26 +18,37 @@
 <script src="../dist/bs-layer.js"></script>
 <script>
     (function ($) {
-        function onLoadLogin($content) {
-            const $innerButtons = $content.find('[data-bs-toggle="layer"]');
+        function onPostBody($loginBtn, $content) {
+            const $innerButtons = $content.find('#btnLayerRegister');
             $innerButtons.bsLayer({
+                name: 'register',
                 title: 'Register',
-                onLoad: function ($registerContent) {
-                    const $innerButtonP = $registerContent.find('[data-bs-toggle="layer"]');
+                onPostBody: function ($registerContent) {
+                    const $innerButtonP = $registerContent.find('#btnLayerPolicy');
                     $innerButtonP.bsLayer({
+                        backdrop: 'static',
+                        name: 'policy',
                         title: 'Policy',
                         width: 400,
+                        onShown: function(_$content) {
+                            $loginBtn.bsLayer('refresh', {title: 'Login with policy'});
+                            $.bsLayer.customEvent('login-page', 'policy-shown');
+                        }
                     });
                 },
             });
         }
 
-        $('[data-bs-toggle="layer"]').bsLayer({
-            backdrop: true,
+        const loginBtn = $('#btnLayerLogin');
+        loginBtn.bsLayer({
+            name: 'login-page',
+            // backdrop: true,
             title: 'Login',
-            onLoad: onLoadLogin,
+            onPostBody: function($content) {
+                onPostBody(loginBtn, $content);
+            },
             onAll(eventName, ...params) {
-                console.log(eventName, params);
+                console.log('login-page', eventName, params);
             }
         });
 

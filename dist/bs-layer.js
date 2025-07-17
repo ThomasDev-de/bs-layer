@@ -4,13 +4,23 @@
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
         version: '1.0.0',
-        getDefaults: function () {
+        getDefaults() {
             return this.defaults;
         },
-        getConfig: function () {
+        getConfig() {
             return this.config;
         },
+        setConfig(config = {}) {
+            if (!this.utils.isValueEmpty(config)) {
+                const newConfig = $.extend(true, {}, this.config, config);
+                this.config = newConfig;
+            }
+        },
         config: {
+            ajax: {
+                method: 'GET',
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
             distanceBetweenLayers: 100,
             animationDuration: 400,
             zIndexStart: 1050,
@@ -19,29 +29,37 @@
                 close: 'bi bi-x-lg',
                 maximize: 'bi bi-arrows-angle-expand',
                 minimize: 'bi bi-arrows-angle-contract',
+            },
+            onError(_$message) {
             }
         },
         defaults: {
+            name: 'layer01',
             title: null,
             width: undefined,
-            backdrop: true,
+            backdrop: false,
             url: null,
             closeable: true,
+            expandable: true,
             queryParams(params) {
                 return params;
             },
             onAll: function (eventName, ...args) {
 
             },
-            onLoad: function ($content) {
+            onPostBody: function (_$content) {
             },
-            onShow: function ($layer) {
+            onShow: function () {
             },
-            onShown: function ($layer) {
+            onShown: function () {
             },
             onHide: function () {
             },
             onHidden: function () {
+            },
+            onRefresh: function (_$content) {
+            },
+            onCustomEvent: function (_eventName, ...params) {
             },
         },
         vars: {
@@ -50,28 +68,60 @@
             immediate: false,
             openLayers: []
         },
-        close: close,
+        customEvent: function (name, eventName, ...params) {
+            if (!name) {
+                // $.bsLayer.onError('Layer name is required for customEvent!');
+                return;
+            }
+            const cleanName = this.utils.toCamelCase(name);
+            const $layer = $(`.bs-layer[data-name="${cleanName}"]`);
+            if (!$layer.length) {
+                // $.bsLayer.onError('Layer with name "' + name + '" not found!');
+                return;
+            }
+            const $layerBtn = getButtonByLayer($layer);
+            if (!$layerBtn.length) {
+                return;
+            }
+            triggerEvent($layerBtn, 'custom-event', eventName, ...params);
+
+        },
+        // close: close,
         closeAll: closeAll,
+        getLayerByName: function (name) {
+            const cleanName = this.utils.toCamelCase(name);
+            const $layer = $(`.bs-layer[data-name="${cleanName}"]`);
+            return $layer ?? null;
+        },
         utils: {
+            toCamelCase(string) {
+                const result = string
+                    .split('-')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join('');
+                return result.charAt(0).toLowerCase() + result.slice(1);
+            },
             getUniqueId(prefix = "bs_layer_") {
                 const randomId = Math.random().toString(36).substring(2, 10);
                 return prefix + randomId;
             },
             isValueEmpty(value) {
                 if (value === null || typeof value === 'undefined') {
-                    return true; // Null or undefined
+                    return true; // Null oder undefined
                 }
                 if (Array.isArray(value)) {
-                    return value.length === 0; // Empty array
+                    return value.length === 0; // Leeres Array
                 }
                 if (typeof value === 'string') {
-                    return value.trim().length === 0; // Empty string (including only spaces)
+                    return value.trim().length === 0; // Leerstring
                 }
-                return false; // All other values are considered non-empty (including numbers)
+                if (typeof value === 'object') {
+                    return Object.keys(value).length === 0; // Leeres Objekt
+                }
+                return false; // Alles andere gilt als nicht leer
             },
             executeFunction(functionOrName, ...args) {
                 if (!functionOrName) {
-                    // console.warn('No functional name or functional reference!');
                     return undefined;
                 }
 
@@ -99,21 +149,26 @@
     };
 
     const namespace = '.bs.layer';
+    const backdropId = 'layerBackdrop';
 
 
-    $.fn.bsLayer = function (optionsOrMethod) {
-        if ($(this).length === 0) return;
+    $.fn.bsLayer = function (optionsOrMethod, ...args) {
+        if ($(this).length === 0) {
+            $.bsLayer.onError('No layer button found!');
+            return;
+        }
 
         if ($(this).length > 1) {
             return $(this).each(function () {
-                return $(this).bsLayer(optionsOrMethod);
+                return $(this).bsLayer(optionsOrMethod, ...args);
             });
         }
 
         const $layerButton = $(this);
 
         // Automatische Initialisierung
-        if (!$layerButton.data('dataBsLayer')) {
+        if (!$layerButton.data('layerConfig')) {
+            $layerButton.attr('aria-controls', $.bsLayer.utils.getUniqueId('layer_'));
             $layerButton.addClass('btn-layer');
             const options = typeof optionsOrMethod === 'object' ? optionsOrMethod : {};
             // Zusammenfügen von Standard- und benutzerdefinierten Einstellungen
@@ -125,11 +180,11 @@
                 options
             );
 
-            const dataBsLayer = {
+            const layerConfig = {
                 settings: settings,
             };
 
-            $layerButton.data('dataBsLayer', dataBsLayer);
+            $layerButton.data('layerConfig', layerConfig);
             btnEvents($layerButton);
         }
 
@@ -144,14 +199,54 @@
                     $layerButton.trigger('click' + namespace);
                 }
                     break;
+                case 'refresh': {
+                    const newOptions = args.length > 0 ? args[0] : {};
+                    refresh($layerButton, newOptions);
+                }
             }
         }
 
         return $layerButton;
     };
 
+    function refresh($layerBtn, options = {}) {
+        const $layer = getLayerByButton($layerBtn);
+        if (!$layer.length) {
+            // $.bsLayer.onError('Layer with name "' + name + '" not found!');
+            return;
+        }
+
+        delete options.name;
+
+        // Default: hole aktuelle Settings
+        console.log('refresh', 'getSetting');
+        const settings = getSettings($layerBtn);
+
+        // Optionale neue Einstellungen mergen (nur falls übergeben und Typ passt)
+        const {url, ajax, queryParams} = options;
+        if (typeof url === "string" || typeof url === "function") {
+            settings.url = url;
+        }
+        if (ajax && typeof ajax === "object") {
+            settings.ajax = ajax;
+        }
+        if (typeof queryParams === "function") {
+            settings.queryParams = queryParams;
+        }
+
+        setSettings($layerBtn, settings);
+        fetchContent($layerBtn, $layer, true).then(function ({content, btn}) {
+            triggerEvent(btn, 'post-body', content);
+            triggerEvent(btn, 'refresh');
+        });
+    }
+
     function triggerEvent($btnLayer, eventName, ...args) {
         const $btn = $($btnLayer);
+        if (!$btn.data('layerConfig')) {
+            return
+        }
+        console.log('triggerEvent', 'getSetting', eventName);
         // Retrieve the current bsTable settings for this table
         const settings = getSettings($btn);
 
@@ -186,73 +281,50 @@
     }
 
     function getSettings($btnLayer) {
-        return $btnLayer.data('dataBsLayer').settings
+        return $($btnLayer).data('layerConfig').settings
+    }
+
+    function setSettings($btnLayer, settings) {
+        $($btnLayer).data('layerConfig').settings = settings;
     }
 
     function btnEvents($btnLayer) {
-        $btnLayer.on('click' + namespace, function (e) {
-            e.preventDefault();
-            if ($.bsLayer.vars.isAnimating || $('.bs-layer.sliding').length) {
-                return; // Noch in Animation, keine weitere Aktion ausführen
-            }
-            open($(e.currentTarget));
-        });
-    }
-
-    function globalEvents() {
-        // Schließen (immer nur das oberste)
-        $(document)
-            .on('click' + namespace, '.bs-layer .btn-toggle-full-width', function (e) {
-                e.preventDefault();
-                const $layer = $(e.currentTarget).closest('.bs-layer');
-                const config = $.bsLayer.getConfig();
-                const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width i');
-                $layer.toggleClass('w-100');
-                $layerMaxMinBtn
-                    .removeClass(config.icons.maximize)
-                    .removeClass(config.icons.minimize);
-                if ($layer.hasClass('w-100')) {
-                    $layer.removeClass('rounded-start-5');
-                    $layerMaxMinBtn.addClass(config.icons.minimize);
-                } else {
-                    $layer.addClass('rounded-start-5');
-                    $layerMaxMinBtn.addClass(config.icons.maximize);
-                }
-            })
-            .on('click' + namespace, '[data-bs-dismiss="layer"]', function (e) {
-                e.preventDefault();
-                close();
-            })
-            .on('click' + namespace, '#layerBackdrop', function (e) {
+        $($btnLayer)
+            .off('click' + namespace)
+            .on('click' + namespace, function (e) {
                 e.preventDefault();
                 if ($.bsLayer.vars.isAnimating) {
-                    return;
+                    return; // Noch in Animation, keine weitere Aktion ausführen
                 }
-
-                const latestLayer = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
-                const btnLayer = latestLayer.data('controller');
-                const settings = getSettings(btnLayer);
-
-                if (settings.backdrop === 'static' || !settings.backdrop) {
-                    return;
-                }
-
-                close();
+                open($(e.currentTarget));
             });
+    }
 
-        // ESC schließt nur das oberste Menü (optional: ESC auch ignorieren bei static)
-        $(document).on('keydown' + namespace, function (e) {
-            if (e.key === "Escape") {
-                // ESC sperren, wenn backdrop 'static'
-                const backdropOpt = $.bsLayer.defaults.backdrop;
-                if (backdropOpt === 'static') return;
-                if ($('.bs-layer.sliding').length) {
-                    return;
-                }
-                close();
+
+    /**
+     * Closes the most recently opened layer, if no animations are currently in progress.
+     * This function optionally checks if the user clicked on the backdrop,
+     * and whether the layer is configured to allow closure via such behavior.
+     *
+     * @param {boolean} [clickedOnBackdrop=false] - Indicates if the user clicked on the backdrop.
+     *                                              If true, the function will check the layer's
+     *                                              backdrop configuration to decide if it should close.
+     * @return {void}
+     */
+    function closeLatestLayer($layer, clickedOnBackdrop = false) {
+
+        if ($.bsLayer.vars.isAnimating) {
+            return;
+        }
+
+
+        if (clickedOnBackdrop) {
+            if (['static'].includes($layer.attr('data-bs-backdrop'))) {
+                return;
             }
-        });
+        }
 
+        close($layer);
     }
 
     /**
@@ -263,9 +335,11 @@
      * @return {number} The calculated width for the current layer in pixels.
      */
     function getCurrentWidth($btnLayer) {
+        console.log('getCurrentWidth', 'getSetting');
         const settings = getSettings($btnLayer);
         const config = $.bsLayer.getConfig();
-        const countOpenLayers = $.bsLayer.vars.openLayers.length;
+        const openLayerIds = $.bsLayer.vars.openLayers; // Array of IDs (strings)
+        const countOpenLayers = openLayerIds.length;
         const winWidth = $(window).width();
 
         // Bootstrap sm breakpoint: 576px
@@ -277,14 +351,20 @@
             return settings.width;
         }
 
-        // First menu: 80% of the window width (you can also set, if desired)
+        // First menu: 80% of window width
         if (countOpenLayers === 1) {
             return Math.round(winWidth * 0.8);
         }
 
-
-        const prevWidth = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2].width ?
-            $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2].width() : Math.round(winWidth * 0.8);
+        // Find the previous layer by its ID and use its width
+        let prevWidth = Math.round(winWidth * 0.8);
+        if (countOpenLayers > 1) {
+            const prevLayerId = openLayerIds[countOpenLayers - 2];
+            const $prevLayer = getLayerById(prevLayerId);
+            if ($prevLayer.length && $prevLayer.width()) {
+                prevWidth = $prevLayer.width();
+            }
+        }
         return Math.max(prevWidth - config.distanceBetweenLayers, 576);
     }
 
@@ -304,13 +384,12 @@
         ].join('');
     }
 
-    function getTemplate($btnLayer) {
+    function getTemplate(settings) {
         const config = $.bsLayer.getConfig();
-        const settings = getSettings($btnLayer);
         const closeableBtn = !settings.closeable ? '' : [
             `<button type="button" class="btn" data-bs-dismiss="layer"><i class="${config.icons.close}"></i></button>`,
         ].join('');
-        const maxMinBtn = !settings.closeable ? '' : [
+        const maxMinBtn = !settings.expandable ? '' : [
             `<button type="button" class="btn btn-toggle-full-width"><i class="${config.icons.maximize}"></i></button>`,
         ].join('');
 
@@ -328,61 +407,75 @@
         ].join('');
     }
 
-    /**
-     * Ensures the element has a valid target and returns the plain target string (without the hash).
-     * For <a>: ensures href="#id"
-     * For <button>: ensures data-bs-target="#id"
-     * @param {jQuery} $btnLayerElement - The jQuery element (link or button) to process.
-     * @returns {string} The target id (without #)
-     */
-    function getOrCreateTarget($btnLayerElement) {
-        const $btnLayer = $($btnLayerElement);
-        let target;
-        if (! $btnLayer.attr('data-bs-toggle')) {
-            $btnLayer.attr('data-bs-toggle', 'layer');
-        }
-        if ($btnLayer.is('a')) {
-            let href = $btnLayer.attr('href');
-            if ($.bsLayer.utils.isValueEmpty(href) || href === '#') {
-                // Generate unique ID, set as href with '#'
-                const newId = $.bsLayer.utils.getUniqueId();
-                $btnLayer.attr('href', '#' + newId);
-                target = newId;
-            } else if (href.charAt(0) === '#') {
-                target = href.substring(1);
-            } else {
-                target = href;
+
+    function fetchContent($btnLayer, $layer, triggerRefresh = false) {
+        return new Promise((resolve, reject) => {
+            const settings = getSettings($btnLayer);
+            const config = $.bsLayer.getConfig();
+            const layerBody = $layer.find('.layer-body');
+            layerBody.html(getLoading());
+
+            if (!settings.url) {
+                reject('Settings.url not defined!');
+                return;
             }
-        } else if ($btnLayer.is('button')) {
-            let dataTarget = $btnLayer.attr('data-bs-target');
-            if ($.bsLayer.utils.isValueEmpty(dataTarget) || dataTarget === '#') {
-                // Generate unique ID, set as data-bs-target with '#'
-                const newId = $.bsLayer.utils.getUniqueId();
-                $btnLayer.attr('data-bs-target', '#' + newId);
-                target = newId;
-            } else if (dataTarget.charAt(0) === '#') {
-                target = dataTarget.substring(1);
+
+            const query = typeof settings.queryParams === 'function'
+                ? settings.queryParams()
+                : {};
+
+            let promise;
+            if (typeof settings.url === 'function') {
+                try {
+                    promise = Promise.resolve($.bsLayer.utils.executeFunction(settings.url, query));
+                } catch (err) {
+                    reject(err);
+                    return;
+                }
             } else {
-                target = dataTarget;
+                promise = $.ajax({
+                    url: settings.url,
+                    type: config.ajax.method || 'GET',
+                    data: query,
+                    contentType: config.ajax.contentType || 'application/x-www-form-urlencoded; charset=UTF-8'
+                });
             }
-        }
-        return target;
+
+            if (promise && typeof promise.then === 'function') {
+                promise
+                    .then(function (res) {
+                        const $content = $(res);
+                        $(layerBody).empty().append($content);
+                        resolve({content: $content, btn: $btnLayer});
+                    })
+                    .catch(function (error) {
+                        console.error('Error loading the layer:', error);
+                        // $.bsLayer.onError('Error loading the layer:', error);
+                        reject(error);
+                    });
+            } else {
+                const errMsg = 'Settings.url muss eine Promise liefernde Funktion oder eine URL sein!';
+                console.error(errMsg);
+                // $.bsLayer.onError(errMsg);
+                reject(errMsg);
+            }
+        });
     }
 
+    function getLayerById(id) {
+        return $(`.bs-layer[id="${id}"]`);
+    }
 
-    /**
-     * Handles the content of a given layer by updating its body with new content
-     * and triggering a 'load' event on the specified button layer.
-     *
-     * @param {jQuery} $btnLayer - The jQuery object representing the button layer.
-     * @param {jQuery} $layerBody - The jQuery object representing the layer body to update.
-     * @param {string} res - The response string containing the new content to be inserted into the layer body.
-     * @return {void} This function does not return a value.
-     */
-    function handleLayerContent($btnLayer, $layerBody, res) {
-        const $content = $(res);
-        $($layerBody).empty().append($content);
-        triggerEvent($btnLayer, 'load', $content);
+    function getLayerByButton($btnLayer) {
+        return $(`.bs-layer[id="${$btnLayer.attr('aria-controls')}"]`);
+    }
+
+    function getButtonByLayer($layer) {
+        return $('.btn-layer[aria-controls="' + $layer.attr('id') + '"]');
+    }
+
+    function getLayerIdByButton($btnLayer) {
+        return $($btnLayer).attr('aria-controls');
     }
 
     /**
@@ -395,26 +488,44 @@
     function open($btnLayer) {
         if ($.bsLayer.vars.isAnimating) {
             return;
-        } // Abbrechen, wenn eine Animation bereits läuft
-        $.bsLayer.vars.isAnimating = true;      // Flag setzen, um Animation zu blockieren
+        }
+        $.bsLayer.vars.isAnimating = true;      // Set flag to block animations
         const settings = getSettings($btnLayer);
+        const layerId = getLayerIdByButton($btnLayer);
         const config = $.bsLayer.getConfig();
-        let target = getOrCreateTarget($btnLayer);
         const animationDuration = config.animationDuration;
-        const $menu = $('<div>', {
-            'data-bs-theme': 'light',
-            id: target,
-            html: getTemplate($btnLayer)
-        }).appendTo(config.parent);
-        $menu.data('controller', $btnLayer);
+        const baseName = !settings.name
+            ? 'layer' + ($.bsLayer.vars.openLayers.length + 1)
+            : $.bsLayer.utils.toCamelCase(settings.name);
 
-        $.bsLayer.vars.openLayers.push($menu);
+        // Check if a layer with the same name is already open (IDs, not objects)
+        const nameExists = $.bsLayer.vars.openLayers.some(layerId => {
+            const $layer = getLayerById(layerId);
+            return $layer.attr('data-name') === baseName;
+        });
+        if (nameExists) {
+            if (typeof config.onError === 'function') {
+                config.onError('A layer with the name "' + baseName + '" is already open!');
+            }
+            $.bsLayer.vars.isAnimating = false;
+            return;
+        }
+
+        triggerEvent($btnLayer, 'show');
+
+        $.bsLayer.vars.openLayers.push(layerId);
 
         const width = getCurrentWidth($btnLayer);
         const zIndex = getCurrentZIndex();
-        $menu
-            .addClass('position-fixed text-dark top-0 h-100 rounded-start-5 bs-layer sliding')
-            .css({
+
+        const $layer = $('<div>', {
+            'data-bs-backdrop': typeof settings.backdrop === 'boolean' ? (settings.backdrop ? 'true' : 'false') : 'static',
+            class: 'position-fixed text-dark top-0 h-100 rounded-start-5 bs-layer sliding',
+            'data-name': baseName,
+            'data-bs-theme': 'light',
+            id: layerId,
+            html: getTemplate(settings),
+            css: {
                 width: width + 'px',
                 right: '-' + width + 'px',
                 zIndex: zIndex,
@@ -424,65 +535,49 @@
                 boxShadow: '0 16px 80px rgba(0, 0, 0, 0.7)',
                 backdropFilter: 'blur(9.1px)',
                 WebkitBackdropFilter: 'blur(9.1px)',
-                // border: '1px solid rgba(255, 255, 255, 1)'
-            })
-            .attr('aria-modal', 'true')
-            .attr('role', 'layer');
-
-        const layerBody = $menu.find('.layer-body');
-        layerBody.html(getLoading());
-
-        // If a URL is set, load content via AJAX and insert into the layer
-        if (settings.url) {
-            const query = typeof settings.queryParams === 'function' ? settings.queryParams() : {};
-
-            // Jetzt immer als Promise behandeln!
-            let promise;
-            if (typeof settings.url === 'function') {
-                promise = $.bsLayer.utils.executeFunction(query);
-            } else {
-                promise = $.ajax({
-                    url: settings.url,
-                    type: 'GET',
-                    data: query,
-                    contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
-                });
             }
+        }).appendTo(config.parent);
 
-            if (promise && typeof promise.then === 'function') {
-                promise
-                    .then(function (res) {
-                        handleLayerContent($btnLayer, layerBody, res);
-                    })
-                    .catch(function (error) {
-                        console.error('Error loading the layer:', error);
-                    });
-            } else {
-                console.error('Settings.url must either be a function with a promise or a string url!');
-            }
-        }
 
-        // Animate in
-        void $menu[0].offsetWidth;
-        $menu.css('right', '0');
+
+        // Force browser reflow: accessing offsetWidth triggers layout calculation.
+        // Ensures previous style changes are applied before starting a transition or animation.
+        void $layer[0].offsetWidth;
+        $layer.css('right', '0');
 
         // Hide overflow for all previous layers
         for (let i = 0; i < $.bsLayer.vars.openLayers.length - 1; i++) {
-            $.bsLayer.vars.openLayers[i].addClass('overflow-hidden');
+            const $layer2 = getLayerById($.bsLayer.vars.openLayers[i]);
+            $layer2.addClass('overflow-hidden');
         }
-        $menu.removeClass('overflow-hidden');
+
+        $layer.removeClass('overflow-hidden');
 
         // BACKDROP logic
-        if (settings.backdrop) {
-            let $backdrop = $('#layerBackdrop');
-            if ($backdrop.length === 0) {
-                $backdrop = $('<div id="layerBackdrop" class="modal-backdrop fade show"></div>')
-                    .appendTo('body');
-            } else {
-                $backdrop.appendTo('body');
-            }
-            const backdropZ = zIndex - 1;
-            $backdrop.css({zIndex: backdropZ});
+        let $backdrop = $('#' + backdropId);
+        if ($backdrop.length === 0) {
+            $backdrop = $(`<div id="${backdropId}" class="modal-backdrop fade show"></div>`)
+                .appendTo('body');
+        } else {
+            $backdrop.appendTo('body');
+        }
+        const backdropZ = zIndex - 1;
+        $backdrop.css({zIndex: backdropZ});
+
+        // Backdrop always blocks interactions.
+        // If settings.backdrop is false, make it transparent and invisible but still block mouse events.
+        if (settings.backdrop === false) {
+            $backdrop.css({
+                'background-color': 'transparent',
+                'opacity': 0,
+                'pointer-events': 'auto' // Must not be 'none' to block interaction!
+            });
+        } else {
+            $backdrop.css({
+                'background-color': '', // Reset to default
+                'opacity': '',
+                'pointer-events': 'auto'
+            });
         }
 
         // Only set body overflow for the first opened layer
@@ -490,16 +585,17 @@
             $('body').addClass('overflow-hidden');
         }
 
-        // Fire event before showing
-        triggerEvent($btnLayer, 'show', $menu);
+        fetchContent($btnLayer, $layer).then(function ({content, btn}) {
+            triggerEvent(btn, 'post-body', content);
+        });
 
         // Fire event after fully shown
-        bsLayerTimeout(() => {
-            $menu.css('transition', 'none');
-            triggerEvent($btnLayer, 'shown', $menu);
-            $menu.removeClass('sliding');
-            $menu.addClass('show');
-            $($btnLayer).data('layer', $menu);
+        setTimeout(() => {
+
+            triggerEvent($btnLayer, 'shown');
+            $layer.css('transition', 'none');
+            $layer.removeClass('sliding');
+            $layer.addClass('show');
             $.bsLayer.vars.isAnimating = false;
         }, animationDuration);
     }
@@ -511,48 +607,84 @@
      *
      * @return {void} This function does not return a value.
      */
-    function close() {
+    function close($layer) {
         if ($.bsLayer.vars.isAnimating) {
+            return;
+        }
+
+        if (!$layer.length) {
+            $.bsLayer.onError('No layer found to close!');
             return;
         }
         $.bsLayer.vars.isAnimating = true;
 
-        const settings = $.bsLayer.defaults;
         const config = $.bsLayer.getConfig();
         const animationDuration = config.animationDuration;
-        const $layer = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
-        const $layerBtn = $layer.data('controller');
+        // const $layerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+
+        // const $layer = getLayerById($layerId);
+
+        const $layerBtn = getButtonByLayer($layer);
+
+        if (!$layerBtn.length || typeof $layerBtn.data('layerConfig') !== 'object') {
+            $.bsLayer.utils.executeFunction($.bsLayer.onError, 'No controller found for layer!');
+            return;
+        }
+        console.log('close', 'getSetting');
+        const settings = getSettings($layerBtn);
         const width = $layer && $layer.outerWidth ? $layer.outerWidth() : 0;
         $layer.css('transition', 'right ' + animationDuration + 'ms');
-        if ($layer) {
-            triggerEvent($layerBtn, 'hide');
+        triggerEvent($layerBtn, 'hide');
+
+        // Always handle backdrop, regardless of settings.backdrop
+        if ($.bsLayer.vars.openLayers.length === 1) {
+            $('#' + backdropId).remove();
+        } else if ($.bsLayer.vars.openLayers.length > 1) {
+            // Get the previous layer by its ID
+            const underLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2];
+            const $underLayer = getLayerById(underLayerId);
+            const zIndex = $underLayer && $underLayer.css
+                ? (parseInt($underLayer.css('z-index'), 10) || 1050)
+                : 1050;
+            $('#' + backdropId).css({zIndex: zIndex - 1});
         }
 
-        if (settings.backdrop) {
-            if ($.bsLayer.vars.openLayers.length === 1) {
-                $('#layerBackdrop').remove();
-            } else if ($.bsLayer.vars.openLayers.length > 1) {
-                const $underLayer = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 2];
-                const zIndex = $underLayer && $underLayer.css
-                    ? (parseInt($underLayer.css('z-index'), 10) || 1050)
-                    : 1050;
-                $('#layerBackdrop').css({zIndex: zIndex - 1});
+// Set backdrop transparency and interactivity based on settings.backdrop
+        const $currentBackdrop = $('#' + backdropId);
+        if ($currentBackdrop.length) {
+            if (settings.backdrop === false) {
+                // Invisible, but blocks mouse events
+                $currentBackdrop.css({
+                    'background-color': 'transparent',
+                    'opacity': 0,
+                    'pointer-events': 'auto'
+                });
+            } else {
+                // Visible Bootstrap default
+                $currentBackdrop.css({
+                    'background-color': '',
+                    'opacity': '',
+                    'pointer-events': 'auto'
+                });
             }
         }
 
         // Menü animiert schließen
-        if ($layer && $layer.css) {
+        if ($layer.css) {
             $layer.css('right', '-' + width + 'px');
             $layer.addClass('sliding');
+            $layer.removeClass('show');
 
             setTimeout(function () {
                 $layer.hide(function () {
                     triggerEvent($layerBtn, 'hidden');
                     $layer.remove(); // Layer aus DOM entfernen
 
-                    $.bsLayer.vars.openLayers.pop(); // Layer aus dem Stack entfernen
+                    $.bsLayer.vars.openLayers.pop(); // Remove the layer from the stack
                     if ($.bsLayer.vars.openLayers.length) {
-                        $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1].removeClass('overflow-hidden');
+                        const lastLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+                        const $lastLayer = getLayerById(lastLayerId);
+                        $lastLayer.removeClass('overflow-hidden');
                     } else {
                         $('body').removeClass('overflow-hidden');
                     }
@@ -586,8 +718,12 @@
          * @return {void} Does not return a value.
          */
         function closeNext() {
-            if (!vars.openLayers.length) return;
-            close();
+            if (!vars.openLayers.length) {
+                return;
+            }
+            const latestLayerId = vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+            const $layer = getLayerById(latestLayerId);
+            close($layer);
             if (vars.openLayers.length > 0) {
                 setTimeout(function waitAndClose() {
                     if (!vars.isAnimating) {
@@ -603,21 +739,72 @@
         closeNext();
     }
 
-    /**
-     * Executes a callback function after a specified duration unless certain conditions are met.
-     * If the `immediate` flag is set or the duration is 0, the callback is executed immediately.
-     *
-     * @param {Function} callback - The function to be executed after the timeout or immediately.
-     * @param {number} duration - The duration (in milliseconds) to wait before executing the callback.
-     * @return {number|null} Returns a timeout ID if a timeout is set, or null if the callback is executed immediately.
-     */
-    function bsLayerTimeout(callback, duration) {
-        if ($.bsLayer.vars.immediate || duration === 0) {
-            callback();
-            return null;
-        } else {
-            return setTimeout(callback, duration);
+    function toggleExpand() {
+        if (!$.bsLayer.vars.openLayers.length) {
+            return;
         }
+        const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+        const $layer = getLayerById(latestLayerId);
+        if (!$layer.length) {
+            return;
+        }
+        const config = $.bsLayer.getConfig();
+        const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width i');
+        $layer.toggleClass('w-100');
+        $layerMaxMinBtn
+            .removeClass(config.icons.maximize)
+            .removeClass(config.icons.minimize);
+        if ($layer.hasClass('w-100')) {
+            $layer.removeClass('rounded-start-5');
+            $layerMaxMinBtn.addClass(config.icons.minimize);
+        } else {
+            $layer.addClass('rounded-start-5');
+            $layerMaxMinBtn.addClass(config.icons.maximize);
+        }
+    }
+
+    function globalEvents() {
+        // Schließen (immer nur das oberste)
+        $(document)
+            .on('click' + namespace, '.bs-layer .btn-toggle-full-width', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleExpand();
+            })
+            .on('click' + namespace, '.bs-layer [data-bs-dismiss="layer"]', function (e) {
+                e.preventDefault();
+                const closetLayer = $(e.currentTarget).closest('.bs-layer');
+                alert(closetLayer.attr('id'));
+                closeLatestLayer(closetLayer);
+            })
+            .on('click' + namespace, '#' + backdropId, function (e) {
+                e.preventDefault();
+                const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+                const latestLayer = getLayerById(latestLayerId);
+                closeLatestLayer(latestLayer,true);
+            });
+
+        // ESC schließt nur das oberste Menü (optional: ESC auch ignorieren bei static)
+        $(document).on('keydown' + namespace, function (e) {
+            if (e.key === "Escape") {
+                if ($.bsLayer.vars.openLayers.length) {
+                    if ($.bsLayer.vars.isAnimating) {
+                        return;
+                    }
+                    const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
+                    const latestLayer = getLayerById(latestLayerId);
+                    if (!latestLayer.length) {
+                        return;
+                    }
+                    // ESC sperren, wenn backdrop 'static'
+                    if (['static'].includes(latestLayer.attr('data-bs-backdrop'))) {
+                        return;
+                    }
+                    close(latestLayer);
+                }
+            }
+        });
+
     }
 })
 (jQuery);

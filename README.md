@@ -98,32 +98,50 @@ All configs and defaults via `$.bsLayer.config` and `$.bsLayer.defaults`:
 <summary>Click for config reference</summary>
 
 ```js
-$.bsLayer = {
-    config: {
-        distanceBetweenLayers: 100,     // px distance offset (visually stacks)
-        animationDuration: 400,         // ms, animation duration
-        zIndexStart: 1050,              // base z-index
-        parent: 'body',                  // where layers will be appended
-        icons: {
-            close: 'bi bi-x-lg',
-            maximize: 'bi bi-arrows-angle-expand',
-            minimize: 'bi bi-arrows-angle-contract',
-        }
+// -------------------
+// Global Config (technical/internal settings, rarely changed by users)
+// -------------------
+const layerConfig = {
+    ajax: {
+        method: 'GET', // Default HTTP method for AJAX requests
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8' // Default content type for AJAX
     },
-    defaults: {
-        width: undefined,               // custom width
-        backdrop: 'static',             // show backdrop
-        url: null,                      // load AJAX url
-        closeable: true,                // show close control
-        queryParams(params) { return params; },  // param processing on AJAX
-        onAll: function(eventName, ...args) {},  // global event callback
-        onLoad: function($content) {},
-        onShow: function($layer) {},
-        onShown: function($layer) {},
-        onHide: function() {},
-        onHidden: function() {}
+    distanceBetweenLayers: 100,         // Offset in px between stacked layers
+    animationDuration: 400,             // Show/hide animation duration in ms
+    zIndexStart: 1050,                  // Initial z-index for the first layer
+    parent: 'body',                     // Parent element where layers are appended
+    icons: {
+        close: 'bi bi-x-lg',            // Bootstrap Icon for close
+        maximize: 'bi bi-arrows-angle-expand', // Bootstrap Icon for maximize
+        minimize: 'bi bi-arrows-angle-contract', // Bootstrap Icon for minimize
     },
-    ...
+    onError($message) {
+        // Global error handler for layer actions
+    }
+};
+
+// -------------------
+// Default Options (typical layer settings, can be customized for each usage)
+// -------------------
+const layerDefaults = {
+    name: 'layer01',                    // Unique name/id for the layer instance
+    title: null,                        // Optional: layer title (string or HTML)
+    width: undefined,                   // Custom width, e.g. '600px' or a number
+    backdrop: true,                     // Show backdrop: true (default), false, or 'static' (not closable by click)
+    url: null,                          // URL to load content via AJAX
+    closeable: true,                    // Show a close (X) button in the header
+    expandable: true,                   // Allow the layer to be maximized
+    queryParams(params) {               // Function to process parameters for AJAX requests
+        return params;
+    },
+    onAll: function(eventName, ...args) {},     // Callback for every fired event
+    onPostBody: function($content) {},          // Called after content is loaded
+    onShow: function() {},                // Called before layer is shown
+    onShown: function() {},               // Called after layer is fully visible
+    onHide: function() {},                      // Called before layer hides
+    onHidden: function() {},                    // Called after layer is hidden
+    onRefresh: function($content) {},           // Called when layer content is refreshed
+    onCustomEvent: function(eventName, ...params) {} // For custom user events
 };
 ```
 </details>
