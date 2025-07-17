@@ -10,7 +10,7 @@
 <body>
 <div class="container py-5">
     <h1>$.fn.bsLayer</h1>
-    <a id="btnLayerLogin" data-url="login.html" href="#slide_menu" class="btn btn-primary">Open a layer via link</a>
+    <a id="btnLayerLogin" data-url="login.html" href="#" class="btn btn-primary">Open a layer via link</a>
 </div>
 
 <script src="../vendor/components/jquery/jquery.min.js"></script>
@@ -19,6 +19,7 @@
 <script>
     (function ($) {
         function onPostBody($loginBtn, $content) {
+            const self = this; // Speichere den äußeren Kontext explizit
             const $innerButtons = $content.find('#btnLayerRegister');
             $innerButtons.bsLayer({
                 name: 'register',
@@ -26,16 +27,21 @@
                 onPostBody: function ($registerContent) {
                     const $innerButtonP = $registerContent.find('#btnLayerPolicy');
                     $innerButtonP.bsLayer({
+                        width: 500,
                         backdrop: 'static',
                         name: 'policy',
                         title: 'Policy',
                         width: 400,
                         onShown: function(_$content) {
-                            $loginBtn.bsLayer('refresh', {title: 'Login with policy'});
+                            $loginBtn.bsLayer('setTitle', 'Login with policy');
+                            // $innerButtons.bsLayer('refresh');
                             $.bsLayer.customEvent('login-page', 'policy-shown');
+                        },
+                        onAll: function(eventName, ...params) {
+                            console.log('policy', eventName, params);
                         }
                     });
-                },
+                }
             });
         }
 
@@ -43,8 +49,13 @@
         loginBtn.bsLayer({
             name: 'login-page',
             // backdrop: true,
+            refreshable: true,
             title: 'Login',
-            onPostBody: function($content) {
+            queryParams: (params) => {
+                params.foo = 'bar';
+                return params;
+            },
+            onPostBody: ($content) => {
                 onPostBody(loginBtn, $content);
             },
             onAll(eventName, ...params) {
