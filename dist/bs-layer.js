@@ -28,7 +28,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.0',
+        version: '1.0.1',
         getDefaults() {
             return this.defaults;
         },
@@ -46,33 +46,43 @@
                 method: 'GET',
                 contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
             },
-            distanceBetweenLayers: 100,
-            animationDuration: 400,
-            zIndexStart: 1050,
-            parent: 'body',
+            fullWidthBreakpoint: 576, // bootstrap sm, under what width the layers should be displayed in full width.
+            firstLayerWithInPercent: .80, // The first layer should take the percentage of the window
+            distanceBetweenLayers: 100, // Each further layer should have how many pixels from the layer lying above
+            animationDuration: 600, // The time in milliseconds, which is to be encouraged for a layer for the full Window width
+            zIndexStart: 1050, // The lowest layer gets this zIndex, each further layer a value higher.
+            parent: 'body', // Where should the layers be inserted?
             icons: {
-                close: 'bi bi-x-lg',
-                refresh: 'bi bi-arrow-clockwise',
-                maximize: 'bi bi-arrows-angle-expand',
-                minimize: 'bi bi-arrows-angle-contract',
+                close: 'bi bi-x-lg', // The close button
+                refresh: 'bi bi-arrow-clockwise', // the refresh button
+                maximize: 'bi bi-arrows-angle-expand', // maximize the window
+                minimize: 'bi bi-arrows-angle-contract', // minimize the window
             },
             onError(_$message) {
             }
         },
         defaults: {
             name: 'layer01',
-            title: null,
+            title: undefined,
             width: undefined,
+            bgStyle: {
+                classes: 'text-dark',
+                css: {
+                    background: 'rgba(255, 255, 255, 0.74)',
+                    boxShadow: '0 16px 80px rgba(0, 0, 0, 0.7)',
+                    backdropFilter: 'blur(9.1px)',
+                    WebkitBackdropFilter: 'blur(9.1px)',
+                }
+            },
             backdrop: true,
-            url: null,
+            url: undefined,
             refreshable: false,
             closeable: true,
             expandable: true,
             queryParams(params) {
                 return params;
             },
-            onAll: function (eventName, ...args) {
-
+            onAll: function (_eventName, ..._args) {
             },
             onPostBody: function (_$content) {
             },
@@ -89,8 +99,7 @@
             onCustomEvent: function (_eventName, ...params) {
             },
         },
-        setAnmiated(animated) {
-            // console.log('setAnmiated', animated);
+        setAnimated(animated) {
             this.vars.isAnimating = animated;
         },
         vars: {
@@ -364,7 +373,7 @@
         const winWidth = $(window).width();
 
         // Bootstrap sm breakpoint: 576px
-        if (winWidth < 576) {
+        if (winWidth < config.fullWidthBreakpoint) {
             return winWidth;
         }
 
@@ -374,7 +383,7 @@
 
         // First menu: 80% of window width
         if (countOpenLayers === 1) {
-            return Math.round(winWidth * 0.8);
+            return Math.round(winWidth * config.firstLayerWithInPercent);
         }
 
         // Find the previous layer by its ID and use its width
@@ -408,13 +417,13 @@
     function getTemplate(settings) {
         const config = $.bsLayer.getConfig();
         const closeableBtn = !settings.closeable ? '' : [
-            `<button type="button" class="btn" data-bs-dismiss="layer"><i class="${config.icons.close}"></i></button>`,
+            `<button type="button" class="btn btn-link bg-transparent" data-bs-dismiss="layer"><i class="${config.icons.close}"></i></button>`,
         ].join('');
         const maxMinBtn = !settings.expandable ? '' : [
-            `<button type="button" class="btn btn-toggle-full-width"><i class="${config.icons.maximize}"></i></button>`,
+            `<button type="button" class="btn btn-link bg-transparent btn-toggle-full-width"><i class="${config.icons.maximize}"></i></button>`,
         ].join('');
-        const refreshbtn = !settings.refreshable ? '' : [
-            `<button type="button" class="btn btn-refresh"><i class="${config.icons.refresh}"></i></button>`,
+        const refreshBtn = !settings.refreshable ? '' : [
+            `<button type="button" class="btn btn-link bg-transparent btn-refresh"><i class="${config.icons.refresh}"></i></button>`,
         ].join('');
 
         return [
@@ -422,7 +431,7 @@
             '<div class="layer-header d-flex flex-nowrap justify-content-between align-items-center p-3">',
             `<h5 class="layer-title">${settings.title || ''}</h5>`,
             '<div class="btn-group">',
-            refreshbtn,
+            refreshBtn,
             maxMinBtn,
             closeableBtn,
             '</div>',
@@ -518,7 +527,7 @@
         if ($.bsLayer.vars.isAnimating) {
             return;
         }
-        $.bsLayer.setAnmiated(true);
+        $.bsLayer.setAnimated(true);
         // $.bsLayer.vars.isAnimating = true;      // Set flag to block animations
         const layerId = getLayerIdByButton($btnLayer);
         if (!$.bsLayer.vars.openLayers.includes(layerId)) {
@@ -527,7 +536,6 @@
 
         const settings = getSettings($btnLayer);
         const config = $.bsLayer.getConfig();
-        const animationDuration = config.animationDuration;
         const baseName = !settings.name
             ? 'layer' + ($.bsLayer.vars.openLayers.length)
             : $.bsLayer.utils.toCamelCase(settings.name);
@@ -542,7 +550,7 @@
                 config.onError('A layer with the name "' + baseName + '" is already open!');
             }
 
-            $.bsLayer.setAnmiated(false);
+            $.bsLayer.setAnimated(false);
             // $.bsLayer.vars.isAnimating = false;
             return;
         }
@@ -553,27 +561,29 @@
 
         const width = getCurrentWidth($btnLayer);
         const zIndex = getCurrentZIndex();
+        const windowWidth = window.innerWidth;
+        const animationDuration = Math.round($.bsLayer.config.animationDuration * (width / windowWidth));
         const layerBackdrop = typeof settings.backdrop === 'boolean' ? (settings.backdrop ? 'true' : 'false') : 'static';
+        const backgroundClasses = settings.bgStyle.classes || '';
+
+        const layerCssDefault = {
+            width: width + 'px',
+            right: '-' + width + 'px',
+            zIndex: zIndex,
+            transition: 'right ' + animationDuration + 'ms ease-in-out',
+            display: 'block',
+        };
+
+        const css = $.extend({}, layerCssDefault, settings.bgStyle.css);
+
         const $layer = $('<div>', {
             'data-bs-backdrop': layerBackdrop,
-            class: 'position-fixed text-dark top-0 h-100 rounded-start-5 bs-layer sliding',
+            class: 'position-fixed  top-0 h-100 rounded-start-5 bs-layer sliding ' + backgroundClasses,
             'data-name': baseName,
-            'data-bs-theme': 'light',
             id: layerId,
             html: getTemplate(settings),
-            css: {
-                width: width + 'px',
-                right: '-' + width + 'px',
-                zIndex: zIndex,
-                transition: 'right ' + animationDuration + 'ms ease-in-out',
-                display: 'block',
-                background: 'rgba(255, 255, 255, 0.74)',
-                boxShadow: '0 16px 80px rgba(0, 0, 0, 0.7)',
-                backdropFilter: 'blur(9.1px)',
-                WebkitBackdropFilter: 'blur(9.1px)',
-            }
+            css: css
         }).appendTo(config.parent);
-
 
         // Force browser reflow: accessing offsetWidth triggers layout calculation.
         // Ensures previous style changes are applied before starting a transition or animation.
@@ -626,12 +636,12 @@
 
         // Fire event after fully shown
         setTimeout(() => {
-            $.bsLayer.setAnmiated(false);
+            $.bsLayer.setAnimated(false);
             triggerEvent($btnLayer, 'shown');
             $layer.css('transition', 'none');
             $layer.removeClass('sliding');
             $layer.addClass('show');
-
+            updateLayersWidth();
         }, animationDuration);
     }
 
@@ -645,15 +655,17 @@
             return;
         }
 
-        $.bsLayer.setAnmiated(true);
+        $.bsLayer.setAnimated(true);
         const layerId = $layer.attr('id');
-        const animationDuration = $.bsLayer.getConfig().animationDuration;
+        const windowWidth = window.innerWidth;
+        const width = $layer.outerWidth() || 0;
+        // Dynamische Animationsdauer berechnen:
+        const animationDuration = Math.round($.bsLayer.getConfig().animationDuration * (width / windowWidth));
 
         // Backdrop und Overflow-Verwaltung bereits vor der Animation anpassen
         handleBackdropAndOverflow($layer);
 
         // Slide-out-Animation starten
-        const width = $layer.outerWidth() || 0;
         $layer.css('transition', `right ${animationDuration}ms ease-in-out`).css('right', `-${width}px`);
         $layer.addClass('sliding').removeClass('show');
         const btn = getButtonByLayer($layer);
@@ -666,7 +678,7 @@
                 // Entferne das Layer aus den offenen Stacks
                 $.bsLayer.vars.openLayers = $.bsLayer.vars.openLayers.filter(id => id !== layerId);
                 triggerEvent(btn, 'hidden');
-                $.bsLayer.setAnmiated(false); // Animation abgeschlossen
+                $.bsLayer.setAnimated(false); // Animation abgeschlossen
             });
         }, animationDuration);
     }
@@ -758,23 +770,80 @@
         if (!$layer.length) {
             return;
         }
-        const config = $.bsLayer.getConfig();
-        const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width i');
-        $layer.toggleClass('w-100');
-        $layerMaxMinBtn
-            .removeClass(config.icons.maximize)
-            .removeClass(config.icons.minimize);
-        if ($layer.hasClass('w-100')) {
-            $layer.removeClass('rounded-start-5');
-            $layerMaxMinBtn.addClass(config.icons.minimize);
+        const isExpanded = $layer.is('[data-expanded]');
+        if (isExpanded) {
+            $layer.removeAttr('data-expanded');
         } else {
-            $layer.addClass('rounded-start-5');
-            $layerMaxMinBtn.addClass(config.icons.maximize);
+            $layer.attr('data-expanded', 'true');
         }
+        updateLayersWidth();
+    }
+
+    function showInFullWidth() {
+        const maxWidth = $.bsLayer.getConfig().fullWidthBreakpoint;
+        const winWidth = $(window).width();
+        return winWidth < maxWidth;
+    }
+
+    function updateLayersWidth() {
+        if (!$.bsLayer.vars.openLayers.length) {
+            return;
+        }
+        const config = $.bsLayer.getConfig();
+        const fullWidth = showInFullWidth();
+        const winWidth = $(window).width();
+        let startWidth = Math.round(winWidth * config.firstLayerWithInPercent);
+        let index = 0;
+        $.bsLayer.vars.openLayers.forEach(layerId => {
+            const $layer = getLayerById(layerId);
+            const $layerBtn = getButtonByLayer($layer);
+            const settings = getSettings($layerBtn);
+            const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width');
+            const $layerMaxMinBtnIcon = $layerMaxMinBtn.find('i');
+            $layerMaxMinBtnIcon
+                .removeClass(config.icons.maximize)
+                .removeClass(config.icons.minimize);
+
+            if ($layer.is('[data-expanded]')) {
+                // Immer Fullscreen!
+                $layer.addClass('w-100').removeClass('rounded-start-5');
+                $layer.width(winWidth);
+                $layerMaxMinBtnIcon.addClass(config.icons.minimize);
+            } else if (!fullWidth) {
+                $layer.removeClass('w-100');
+                $layer.addClass('rounded-start-5');
+                $layer.width(settings.width || startWidth);
+                $layerMaxMinBtnIcon.addClass(config.icons.maximize);
+            } else {
+                $layer.addClass('w-100').removeClass('rounded-start-5');
+                $layer.width(winWidth);
+                $layerMaxMinBtnIcon.addClass(config.icons.minimize);
+            }
+
+            if (fullWidth) {
+                $layerMaxMinBtn.hide();
+            } else {
+                $layerMaxMinBtn.show();
+            }
+
+            startWidth -= config.distanceBetweenLayers;
+            index++;
+        });
     }
 
     function globalEvents() {
-        // Schließen (immer nur das oberste)
+        function debounce(func, wait) {
+            let timeout;
+            return function () {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, arguments), wait);
+            };
+        }
+
+        const debouncedUpdateLayersWidth = debounce(updateLayersWidth, 120);
+
+        $(window).on('resize', debouncedUpdateLayersWidth);
+
         $(document)
             .on('click' + namespace, '.bs-layer .btn-toggle-full-width', function (e) {
                 e.preventDefault();
