@@ -1,6 +1,6 @@
 # bs-layer
 
-A lightweight sliding layer (off-canvas menu & modal) system for jQuery and Bootstrap 5.  
+A lightweight sliding layer system for jQuery and Bootstrap 5.  
 Supports stacking multiple layers, custom AJAX content, animation, and full keyboard support.
 
 ![](demo/img.png)
