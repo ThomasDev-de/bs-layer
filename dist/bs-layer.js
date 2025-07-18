@@ -242,7 +242,7 @@
     function refresh($layerBtn, options = {}) {
         const $layer = getLayerByButton($layerBtn);
         if (!$layer.length) {
-            // $.bsLayer.onError('Layer with name "' + name + '" not found!');
+            $.bsLayer.onError('Layer with name "' + name + '" not found!');
             return;
         }
 
@@ -278,7 +278,8 @@
     function triggerEvent($btnLayer, eventName, ...args) {
         const $btn = $($btnLayer);
         if (!$btn.data('layerConfig')) {
-            return
+            $.bsLayer.onError('Layer button in triggerEvent not found!');
+            return;
         }
         // console.log('triggerEvent', 'getSetting', eventName);
         // Retrieve the current bsTable settings for this table
@@ -452,6 +453,7 @@
             layerTitle.html(settings.title || '');
 
             if (!settings.url) {
+                $.bsLayer.onError('Settings.url not defined!');
                 reject('Settings.url not defined!');
                 return;
             }
@@ -467,6 +469,7 @@
                 try {
                     promise = Promise.resolve($.bsLayer.utils.executeFunction(settings.url, query));
                 } catch (err) {
+                    $.bsLayer.onError('Error in fetchContent: ' + err);
                     reject(err);
                     return;
                 }
@@ -551,7 +554,6 @@
             }
 
             $.bsLayer.setAnimated(false);
-            // $.bsLayer.vars.isAnimating = false;
             return;
         }
 
@@ -763,11 +765,13 @@
 
     function toggleExpand() {
         if (!$.bsLayer.vars.openLayers.length) {
+            $.bsLayer.onError('no layer found in toggleExpand');
             return;
         }
         const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
         const $layer = getLayerById(latestLayerId);
         if (!$layer.length) {
+            $.bsLayer.onError('no layer found in toggleExpand');
             return;
         }
         const isExpanded = $layer.is('[data-expanded]');
