@@ -28,7 +28,15 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.1',
+        version: '1.0.2',
+        onDebug($message, ...params) {
+            if ($.bsLayer.config.debug) {
+                console.log('[debug][bsLayer]: ', $message, ...params);
+            }
+        },
+        onError($message, ...params) {
+            console.error('[error][bsLayer]: ', $message, ...params);
+        },
         getDefaults() {
             return this.defaults;
         },
@@ -42,6 +50,7 @@
             }
         },
         config: {
+            debug: true,
             ajax: {
                 method: 'GET',
                 contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -57,8 +66,6 @@
                 refresh: 'bi bi-arrow-clockwise', // the refresh button
                 maximize: 'bi bi-arrows-angle-expand', // maximize the window
                 minimize: 'bi bi-arrows-angle-contract', // minimize the window
-            },
-            onError(_$message) {
             }
         },
         defaults: {
@@ -110,17 +117,18 @@
         },
         customEvent: function (name, eventName, ...params) {
             if (!name) {
-                // $.bsLayer.onError('Layer name is required for customEvent!');
+                this.onError('Layer name is required for customEvent!');
                 return;
             }
             const cleanName = this.utils.toCamelCase(name);
             const $layer = $(`.bs-layer[data-name="${cleanName}"]`);
             if (!$layer.length) {
-                // $.bsLayer.onError('Layer with name "' + name + '" not found!');
+                this.onError('Layer with name "' + name + '" not found!');
                 return;
             }
             const $layerBtn = getButtonByLayer($layer);
             if (!$layerBtn.length) {
+                this.onError('Layer button for layer with name "' + name + '" not found!');
                 return;
             }
             triggerEvent($layerBtn, 'custom-event', eventName, ...params);
@@ -188,6 +196,7 @@
         }
     };
 
+
     const namespace = '.bs.layer';
     const backdropId = 'layerBackdrop';
 
@@ -201,14 +210,19 @@
         const $layerButton = $(this);
 
         if (typeof optionsOrMethod === 'string') {
+            $.bsLayer.onDebug(`Method "${optionsOrMethod}" called on bsLayer.`);
             if (pluginMethods[optionsOrMethod]) {
+                $.bsLayer.onDebug(`Method "${optionsOrMethod}" found on bsLayer.`);
                 return pluginMethods[optionsOrMethod].apply(this, args);
             } else {
+                $.bsLayer.onDebug(`Method "${optionsOrMethod}" does not exist on bsLayer.`);
                 $.bsLayer.onError(`Method "${optionsOrMethod}" does not exist on bsLayer.`);
             }
         } else {
+            $.bsLayer.onDebug(`Method "init" called on bsLayer.`);
             // Initialisierungsmethode verwenden (vorhandener Code)
             if (!$layerButton.data('layerConfig')) {
+                $.bsLayer.onDebug(`Layer button has no data-layer-config attribute.`);
                 const options = typeof optionsOrMethod === 'object' ? optionsOrMethod : {};
                 $layerButton.attr('aria-controls', $.bsLayer.utils.getUniqueId('layer_'));
                 $layerButton.addClass('btn-layer');
@@ -219,15 +233,15 @@
                     $layerButton.data(),
                     options
                 );
+                $.bsLayer.onDebug(`Layer settings:`, settings);
 
                 const layerConfig = {
                     settings: settings,
                 };
 
                 $layerButton.data('layerConfig', layerConfig);
-
-                // Event-Listener hinzufügen
                 btnEvents($layerButton);
+                $.bsLayer.onDebug(`Layer button has been initialized.`);
             }
 
             if (!$.bsLayer.vars.registerGlobalLayerEvents) {
@@ -270,6 +284,7 @@
 
         setSettings($layerBtn, settings);
         fetchContent($layerBtn, $layer, true).then(function ({content, btn}) {
+            $.bsLayer.onDebug('refresh', 'content', content);
             triggerEvent(btn, 'post-body', content);
             triggerEvent(btn, 'refresh');
         });
@@ -278,6 +293,7 @@
     function triggerEvent($btnLayer, eventName, ...args) {
         const $btn = $($btnLayer);
         if (!$btn.data('layerConfig')) {
+            $.bsLayer.onDebug('Layer button not found!');
             $.bsLayer.onError('Layer button in triggerEvent not found!');
             return;
         }
@@ -292,6 +308,7 @@
         const event = $.Event(eventName + namespace);
 
         // Trigger the event on the table with any extra arguments
+        $.bsLayer.onDebug('triggerEvent', eventName + namespace, args);
         $btn.trigger(event, args);
 
         // Prevent the event from bubbling up the DOM
@@ -299,17 +316,16 @@
 
         // Unless this is the generic 'all' event, fire 'all' for global event listeners too
         if (eventName !== 'all') {
+            $.bsLayer.onDebug('triggerEvent', 'all' + namespace, args);
             const allEvent = $.Event(`all${namespace}`);
             $btn.trigger(allEvent, [eventName + namespace, ...args]);
+
             $.bsLayer.utils.executeFunction(settings.onAll, eventName + namespace, ...args);
             allEvent.stopPropagation();
 
             // Automatically map the event name to a settings handler and execute it
             // Converts event name to CamelCase + add "on" prefix (e.g., "show-info-window" -> "onShowInfoWindow")
-            const eventFunctionName = `on${eventName
-                .split('-')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join('')}`;
+            const eventFunctionName = `on` + $.bsLayer.utils.toCamelCase(eventName);
 
             $.bsLayer.utils.executeFunction(settings[eventFunctionName], ...args);
         }
@@ -324,11 +340,13 @@
     }
 
     function btnEvents($btnLayer) {
+        $.bsLayer.onDebug(`Adding events to layer button.`);
         $($btnLayer)
             .off('click' + namespace)
             .on('click' + namespace, function (e) {
                 e.preventDefault();
                 if ($.bsLayer.vars.isAnimating) {
+                    $.bsLayer.onDebug('click event blocked, animation is in progress.');
                     return; // Noch in Animation, keine weitere Aktion ausführen
                 }
                 open($(e.currentTarget));
@@ -444,6 +462,7 @@
 
 
     function fetchContent($btnLayer, $layer, triggerRefresh = false) {
+        $.bsLayer.onDebug('fetchContent called');
         return new Promise((resolve, reject) => {
             const settings = getSettings($btnLayer);
             const config = $.bsLayer.getConfig();
@@ -453,6 +472,7 @@
             layerTitle.html(settings.title || '');
 
             if (!settings.url) {
+                $.bsLayer.onDebug('Settings.url not defined!');
                 $.bsLayer.onError('Settings.url not defined!');
                 reject('Settings.url not defined!');
                 return;
@@ -464,16 +484,21 @@
                 ? settings.queryParams(params)
                 : params;
 
+            $.bsLayer.onDebug('queryParams', query);
+
             let promise;
             if (typeof settings.url === 'function') {
+                $.bsLayer.onDebug('Settings.url is a function!');
                 try {
                     promise = Promise.resolve($.bsLayer.utils.executeFunction(settings.url, query));
                 } catch (err) {
+                    $.bsLayer.onDebug('Error in fetchContent: ' + err);
                     $.bsLayer.onError('Error in fetchContent: ' + err);
                     reject(err);
                     return;
                 }
             } else {
+                $.bsLayer.onDebug('Settings.url is a string!');
                 promise = $.ajax({
                     url: settings.url,
                     type: config.ajax.method || 'GET',
@@ -483,21 +508,23 @@
             }
 
             if (promise && typeof promise.then === 'function') {
+                $.bsLayer.onDebug('Promise returned from Settings.url!');
                 promise
                     .then(function (res) {
                         const $content = $(res);
                         $(layerBody).empty().append($content);
+                        $.bsLayer.onDebug('Content loaded:', $content);
                         resolve({content: $content, btn: $btnLayer});
                     })
                     .catch(function (error) {
-                        console.error('Error loading the layer:', error);
-                        // $.bsLayer.onError('Error loading the layer:', error);
+                        $.bsLayer.onDebug('Error loading the layer:', error);
+                        $.bsLayer.onError('Error loading the layer:', error);
                         reject(error);
                     });
             } else {
                 const errMsg = 'Settings.url muss eine Promise liefernde Funktion oder eine URL sein!';
-                console.error(errMsg);
-                // $.bsLayer.onError(errMsg);
+                $.bsLayer.onDebug(errMsg);
+                $.bsLayer.onError(errMsg);
                 reject(errMsg);
             }
         });
@@ -527,176 +554,196 @@
      * @return {void} Does not return a value. The method modifies the DOM and application state directly.
      */
     function open($btnLayer) {
-        if ($.bsLayer.vars.isAnimating) {
-            return;
-        }
-        $.bsLayer.setAnimated(true);
-        // $.bsLayer.vars.isAnimating = true;      // Set flag to block animations
-        const layerId = getLayerIdByButton($btnLayer);
-        if (!$.bsLayer.vars.openLayers.includes(layerId)) {
-            $.bsLayer.vars.openLayers.push(layerId); // Füge Layer-Id hinzu
-        }
+        try {
 
-        const settings = getSettings($btnLayer);
-        const config = $.bsLayer.getConfig();
-        const baseName = !settings.name
-            ? 'layer' + ($.bsLayer.vars.openLayers.length)
-            : $.bsLayer.utils.toCamelCase(settings.name);
-
-        // Check if a layer with the same name is already open (IDs, not objects)
-        const nameExists = $.bsLayer.vars.openLayers.some(layerId => {
-            const $layer = getLayerById(layerId);
-            return $layer.attr('data-name') === baseName;
-        });
-        if (nameExists) {
-            if (typeof config.onError === 'function') {
-                config.onError('A layer with the name "' + baseName + '" is already open!');
+            $.bsLayer.onDebug('open', $btnLayer);
+            if ($.bsLayer.vars.isAnimating) {
+                $.bsLayer.onDebug('open event blocked, animation is in progress.');
+                return;
+            }
+            $.bsLayer.setAnimated(true);
+            const layerId = getLayerIdByButton($btnLayer);
+            if (!$.bsLayer.vars.openLayers.includes(layerId)) {
+                $.bsLayer.onDebug('Layer not yet open, adding to stack.');
+                $.bsLayer.vars.openLayers.push(layerId); // Füge Layer-Id hinzu
             }
 
-            $.bsLayer.setAnimated(false);
-            return;
-        }
+            const settings = getSettings($btnLayer);
+            const config = $.bsLayer.getConfig();
+            const baseName = !settings.name
+                ? 'layer' + ($.bsLayer.vars.openLayers.length)
+                : $.bsLayer.utils.toCamelCase(settings.name);
 
-        triggerEvent($btnLayer, 'show');
-
-        // $.bsLayer.vars.openLayers.push(layerId);
-
-        const width = getCurrentWidth($btnLayer);
-        const zIndex = getCurrentZIndex();
-        const windowWidth = window.innerWidth;
-        const animationDuration = Math.round($.bsLayer.config.animationDuration * (width / windowWidth));
-        const layerBackdrop = typeof settings.backdrop === 'boolean' ? (settings.backdrop ? 'true' : 'false') : 'static';
-        const backgroundClasses = settings.bgStyle.classes || '';
-
-        const layerCssDefault = {
-            width: width + 'px',
-            right: '-' + width + 'px',
-            zIndex: zIndex,
-            transition: 'right ' + animationDuration + 'ms ease-in-out',
-            display: 'block',
-        };
-
-        const css = $.extend({}, layerCssDefault, settings.bgStyle.css);
-
-        const $layer = $('<div>', {
-            'data-bs-backdrop': layerBackdrop,
-            class: 'position-fixed  top-0 h-100 rounded-start-5 bs-layer sliding ' + backgroundClasses,
-            'data-name': baseName,
-            id: layerId,
-            html: getTemplate(settings),
-            css: css
-        }).appendTo(config.parent);
-
-        // Force browser reflow: accessing offsetWidth triggers layout calculation.
-        // Ensures previous style changes are applied before starting a transition or animation.
-        void $layer[0].offsetWidth;
-        $layer.css('right', '0');
-
-        // Hide overflow for all previous layers
-        for (let i = 0; i < $.bsLayer.vars.openLayers.length - 1; i++) {
-            const $layer2 = getLayerById($.bsLayer.vars.openLayers[i]);
-            $layer2.addClass('overflow-hidden pe-0');
-        }
-
-        $layer.removeClass('overflow-hidden pe-0');
-
-        // BACKDROP logic
-        let $backdrop = $('#' + backdropId);
-        if ($backdrop.length === 0) {
-            $backdrop = $(`<div id="${backdropId}" class="modal-backdrop fade show"></div>`)
-                .appendTo('body');
-        } else {
-            $backdrop.appendTo('body');
-        }
-        const backdropZ = zIndex - 1;
-        $backdrop.css({zIndex: backdropZ});
-
-        // Backdrop always blocks interactions.
-        // If settings.backdrop is false, make it transparent and invisible but still block mouse events.
-        if (layerBackdrop === 'false') {
-            $backdrop.css({
-                'background-color': 'transparent',
-                'opacity': 0,
-                'pointer-events': 'auto' // Must not be 'none' to block interaction!
+            // Check if a layer with the same name is already open (IDs, not objects)
+            const nameExists = $.bsLayer.vars.openLayers.some(layerId => {
+                const $layer = getLayerById(layerId);
+                return $layer.attr('data-name') === baseName;
             });
-        } else {
-            $backdrop.css({
-                'background-color': '', // Reset to default
-                'opacity': '',
-                'pointer-events': 'auto'
+            if (nameExists) {
+                $.bsLayer.onError('A layer with the name "' + baseName + '" is already open!');
+                $.bsLayer.setAnimated(false);
+                $.bsLayer.onDebug('A layer with the name "' + baseName + '" is already open!');
+                return;
+            }
+
+            triggerEvent($btnLayer, 'show');
+
+            // $.bsLayer.vars.openLayers.push(layerId);
+
+            const width = getCurrentWidth($btnLayer);
+            const zIndex = getCurrentZIndex();
+            const windowWidth = window.innerWidth;
+            const animationDuration = Math.round($.bsLayer.config.animationDuration * (width / windowWidth));
+            const layerBackdrop = typeof settings.backdrop === 'boolean' ? (settings.backdrop ? 'true' : 'false') : 'static';
+            const backgroundClasses = settings.bgStyle.classes || '';
+
+            const layerCssDefault = {
+                width: width + 'px',
+                right: '-' + width + 'px',
+                zIndex: zIndex,
+                transition: 'right ' + animationDuration + 'ms ease-in-out',
+                display: 'block',
+            };
+
+            const css = $.extend({}, layerCssDefault, settings.bgStyle.css);
+
+            const $layer = $('<div>', {
+                'data-bs-backdrop': layerBackdrop,
+                class: 'position-fixed  top-0 h-100 rounded-start-5 bs-layer sliding ' + backgroundClasses,
+                'data-name': baseName,
+                id: layerId,
+                html: getTemplate(settings),
+                css: css
+            }).appendTo(config.parent);
+
+            $.bsLayer.onDebug('Layer created:', $layer);
+
+            // Force browser reflow: accessing offsetWidth triggers layout calculation.
+            // Ensures previous style changes are applied before starting a transition or animation.
+            void $layer[0].offsetWidth;
+            $layer.css('right', '0');
+
+            // Hide overflow for all previous layers
+            for (let i = 0; i < $.bsLayer.vars.openLayers.length - 1; i++) {
+                const $layer2 = getLayerById($.bsLayer.vars.openLayers[i]);
+                $layer2.addClass('overflow-hidden pe-0');
+            }
+
+            $layer.removeClass('overflow-hidden pe-0');
+
+            // BACKDROP logic
+            let $backdrop = $('#' + backdropId);
+            if ($backdrop.length === 0) {
+                $backdrop = $(`<div id="${backdropId}" class="modal-backdrop fade show"></div>`)
+                    .appendTo('body');
+            } else {
+                $backdrop.appendTo('body');
+            }
+            const backdropZ = zIndex - 1;
+            $backdrop.css({zIndex: backdropZ});
+
+            // Backdrop always blocks interactions.
+            // If settings.backdrop is false, make it transparent and invisible but still block mouse events.
+            if (layerBackdrop === 'false') {
+                $backdrop.css({
+                    'background-color': 'transparent',
+                    'opacity': 0,
+                    'pointer-events': 'auto' // Must not be 'none' to block interaction!
+                });
+            } else {
+                $backdrop.css({
+                    'background-color': '', // Reset to default
+                    'opacity': '',
+                    'pointer-events': 'auto'
+                });
+            }
+
+            // Only set body overflow for the first opened layer
+            if ($.bsLayer.vars.openLayers.length === 1) {
+                $('body').addClass('overflow-hidden pe-0');
+            }
+
+            fetchContent($btnLayer, $layer).then(function ({content, btn}) {
+                triggerEvent(btn, 'post-body', content);
             });
+
+            // Fire event after fully shown
+            setTimeout(() => {
+                $.bsLayer.setAnimated(false);
+                triggerEvent($btnLayer, 'shown');
+                $layer.css('transition', 'none');
+                $layer.removeClass('sliding');
+                $layer.addClass('show');
+                updateLayersWidth();
+            }, animationDuration);
+
+        } catch (err) {
+            $.bsLayer.onDebug('Error in open: ' + err);
+            $.bsLayer.onError('Error in open: ' + err);
         }
-
-        // Only set body overflow for the first opened layer
-        if ($.bsLayer.vars.openLayers.length === 1) {
-            $('body').addClass('overflow-hidden pe-0');
-        }
-
-        fetchContent($btnLayer, $layer).then(function ({content, btn}) {
-            triggerEvent(btn, 'post-body', content);
-        });
-
-        // Fire event after fully shown
-        setTimeout(() => {
-            $.bsLayer.setAnimated(false);
-            triggerEvent($btnLayer, 'shown');
-            $layer.css('transition', 'none');
-            $layer.removeClass('sliding');
-            $layer.addClass('show');
-            updateLayersWidth();
-        }, animationDuration);
     }
 
     function close($layer) {
-        if ($.bsLayer.vars.isAnimating) {
-            return;
+        $.bsLayer.onDebug('close');
+        try {
+            if ($.bsLayer.vars.isAnimating) {
+                $.bsLayer.onDebug('close event blocked, animation is in progress.');
+                return;
+            }
+
+            if (!$layer.length) {
+                $.bsLayer.onDebug('No layer found to close!');
+                $.bsLayer.onError('No layer found to close!');
+                return;
+            }
+
+            $.bsLayer.setAnimated(true);
+            const layerId = $layer.attr('id');
+            const windowWidth = window.innerWidth;
+            const width = $layer.outerWidth() || 0;
+            // Dynamische Animationsdauer berechnen:
+            const animationDuration = Math.round($.bsLayer.getConfig().animationDuration * (width / windowWidth));
+
+            // Backdrop und Overflow-Verwaltung bereits vor der Animation anpassen
+            handleBackdropAndOverflow($layer);
+
+            // Slide-out-Animation starten
+            $layer.css('transition', `right ${animationDuration}ms ease-in-out`).css('right', `-${width}px`);
+            $layer.addClass('sliding').removeClass('show');
+            const btn = getButtonByLayer($layer);
+            triggerEvent(btn, 'hide');
+            // Nach der Animation: Layer entfernen
+            setTimeout(() => {
+                $layer.hide(() => {
+                    $layer.remove(); // Layer aus DOM entfernen
+
+                    // Entferne das Layer aus den offenen Stacks
+                    $.bsLayer.vars.openLayers = $.bsLayer.vars.openLayers.filter(id => id !== layerId);
+                    triggerEvent(btn, 'hidden');
+                    $.bsLayer.setAnimated(false); // Animation abgeschlossen
+                });
+            }, animationDuration);
+        } catch (err) {
+            $.bsLayer.onDebug('Error in close: ' + err);
+            $.bsLayer.onError('Error in close: ' + err);
         }
-
-        if (!$layer.length) {
-            $.bsLayer.onError('No layer found to close!');
-            return;
-        }
-
-        $.bsLayer.setAnimated(true);
-        const layerId = $layer.attr('id');
-        const windowWidth = window.innerWidth;
-        const width = $layer.outerWidth() || 0;
-        // Dynamische Animationsdauer berechnen:
-        const animationDuration = Math.round($.bsLayer.getConfig().animationDuration * (width / windowWidth));
-
-        // Backdrop und Overflow-Verwaltung bereits vor der Animation anpassen
-        handleBackdropAndOverflow($layer);
-
-        // Slide-out-Animation starten
-        $layer.css('transition', `right ${animationDuration}ms ease-in-out`).css('right', `-${width}px`);
-        $layer.addClass('sliding').removeClass('show');
-        const btn = getButtonByLayer($layer);
-        triggerEvent(btn, 'hide');
-        // Nach der Animation: Layer entfernen
-        setTimeout(() => {
-            $layer.hide(() => {
-                $layer.remove(); // Layer aus DOM entfernen
-
-                // Entferne das Layer aus den offenen Stacks
-                $.bsLayer.vars.openLayers = $.bsLayer.vars.openLayers.filter(id => id !== layerId);
-                triggerEvent(btn, 'hidden');
-                $.bsLayer.setAnimated(false); // Animation abgeschlossen
-            });
-        }, animationDuration);
     }
 
     function handleBackdropAndOverflow($layer) {
-        // Entfernt `overflow-hidden` für den aktuellen Layer
+        $.bsLayer.onDebug('handleBackdropAndOverflow');
+        // removes `overflow-hidden` for the current layer
         $layer.removeClass('overflow-hidden pe-0');
 
-        const remainingLayers = $.bsLayer.vars.openLayers.length - 1; // Aktueller Layer noch nicht entfernt
+        const remainingLayers = $.bsLayer.vars.openLayers.length - 1; // Current layer not yet removed
 
         if (remainingLayers === 0) {
-            // Letzte Ebene geschlossen, Backdrop entfernen und Overflow zurücksetzen
+            // closed the last level, remove the backdrop and reset overflow
             $('#' + backdropId).remove();
             $('body').removeClass('overflow-hidden pe-0');
+            $.bsLayer.onDebug('Last layer closed, backdrop removed.');
         } else {
-            // Backdrop anpassen, falls noch Ebenen geöffnet sind
+            $.bsLayer.onDebug('Remaining layers:', remainingLayers);
+            // adjust the backdrop if levels are still open
             const newTopLayerId = $.bsLayer.vars.openLayers[remainingLayers - 1];
             const $newTopLayer = getLayerById(newTopLayerId);
             // Setze Z-Index des Backdrops für die neue oberste Ebene
@@ -753,7 +800,7 @@
                     if (!vars.isAnimating) {
                         closeNext();
                     } else {
-                        // Noch animiert, nochmal kurz warten
+                       // still animated, wait again briefly
                         setTimeout(waitAndClose, 30);
                     }
                 }, 30);
@@ -763,6 +810,14 @@
         closeNext();
     }
 
+    /**
+     * Toggles the expanded state of the most recently opened layer.
+     * If there are no open layers or the latest layer cannot be found, an error is logged.
+     * The expanded state is indicated by the presence or absence of the `data-expanded` attribute.
+     * Calls `updateLayersWidth` after toggling the state.
+     *
+     * @return {void} This function does not return a value.
+     */
     function toggleExpand() {
         if (!$.bsLayer.vars.openLayers.length) {
             $.bsLayer.onError('no layer found in toggleExpand');
@@ -783,6 +838,12 @@
         updateLayersWidth();
     }
 
+    /**
+     * Determines whether the content should be shown in full width based on the current window width
+     * and a predefined full-width breakpoint.
+     *
+     * @return {boolean} Returns true if the window width is less than the full-width breakpoint, otherwise false.
+     */
     function showInFullWidth() {
         const maxWidth = $.bsLayer.getConfig().fullWidthBreakpoint;
         const winWidth = $(window).width();
@@ -790,7 +851,9 @@
     }
 
     function updateLayersWidth() {
+        $.bsLayer.onDebug('updateLayersWidth');
         if (!$.bsLayer.vars.openLayers.length) {
+            $.bsLayer.onDebug('No layers open, skipping update.');
             return;
         }
         const config = $.bsLayer.getConfig();
@@ -798,6 +861,7 @@
         const winWidth = $(window).width();
         let startWidth = Math.round(winWidth * config.firstLayerWithInPercent);
         let index = 0;
+
         $.bsLayer.vars.openLayers.forEach(layerId => {
             const $layer = getLayerById(layerId);
             const $layerBtn = getButtonByLayer($layer);
@@ -809,16 +873,19 @@
                 .removeClass(config.icons.minimize);
 
             if ($layer.is('[data-expanded]')) {
+                $.bsLayer.onDebug('Layer is expanded, setting width to full.');
                 // Immer Fullscreen!
                 $layer.addClass('w-100').removeClass('rounded-start-5');
                 $layer.width(winWidth);
                 $layerMaxMinBtnIcon.addClass(config.icons.minimize);
             } else if (!fullWidth) {
+                $.bsLayer.onDebug('Window width is less than full width breakpoint, setting width to full.');
                 $layer.removeClass('w-100');
                 $layer.addClass('rounded-start-5');
                 $layer.width(settings.width || startWidth);
                 $layerMaxMinBtnIcon.addClass(config.icons.maximize);
             } else {
+                $.bsLayer.onDebug('Window width is greater than full width breakpoint, setting width to auto.');
                 $layer.addClass('w-100').removeClass('rounded-start-5');
                 $layer.width(winWidth);
                 $layerMaxMinBtnIcon.addClass(config.icons.minimize);
