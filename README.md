@@ -116,45 +116,48 @@ $.bsLayer.setConfig({
 });
 
 // Optional: Overwrite the global onError callback function
-$.bsLayer.config.onError = function($msg) {
+$.bsLayer.config.onError = function ($msg) {
     // Custom error handling
     alert('Layer error: ' + $msg);
 };
 ```
+
 ---
 
 ### Layer Settings
 
 Layer settings define the configuration and behavior of **individual layers**.  
-They can be passed when initializing a layer via `$(selector).bsLayer(options)` or set as `data-` attributes on the layer trigger element.
+They can be passed when initializing a layer via `$(selector).bsLayer(options)` or set as `data-` attributes on the
+layer trigger element.
 
-These settings control properties such as title, width, styles, AJAX URL, refreshability, closing/maximizing, and all event callbacks.  
+These settings control properties such as title, width, styles, AJAX URL, refreshability, closing/maximizing, and all
+event callbacks.  
 Any setting not explicitly defined will fall back to the global defaults.
 
 See the table below for all available settings you can use per layer:
 
-| Option                | Type          | Default / Example                          | Description                                     |
-|-----------------------|---------------|--------------------------------------------|-------------------------------------------------|
-| name                  | string        | 'layer01'                                  | Unique layer name or identifier                 |
-| title                 | string/HTML   | undefined                                  | Optional: Layer title (can be string or HTML)   |
-| width                 | number/string | undefined                                  | Optional: Width in px or as CSS string          |
-| bgStyle               | object        | `{ classes: 'text-dark', css: {...} }`     | Style for background and text color (see below) |
-| &nbsp;&nbsp;↳ classes | string        | 'text-dark'                                | Additional CSS classes for the layer            |
-| &nbsp;&nbsp;↳ css     | object        | `{ background: ..., boxShadow: ..., ... }` | Inline CSS styles for the layer background      |
-| backdrop              | bool/string   | true                                       | Show backdrop: `true`, `false`, or `'static'`   |
-| url                   | string        | undefined                                  | URL for AJAX content loading                    |
-| refreshable           | bool          | false                                      | Enable content refresh                          |
-| closeable             | bool          | true                                       | Show close (X) button in header                 |
-| expandable            | bool          | true                                       | Allow layer to be maximized                     |
-| queryParams           | function      | `(params) => params`                       | Modify AJAX query parameters                    |
-| onAll                 | function      | `function(eventName, ...args) {}`          | Callback for all triggered events               |
-| onPostBody            | function      | `function($content) {}`                    | After content is loaded                         |
-| onShow                | function      | `function() {}`                            | Before layer is shown                           |
-| onShown               | function      | `function() {}`                            | After layer is fully visible                    |
-| onHide                | function      | `function() {}`                            | Before layer is hidden                          |
-| onHidden              | function      | `function() {}`                            | After layer is fully hidden                     |
-| onRefresh             | function      | `function($content) {}`                    | When the layer is refreshed                     |
-| onCustomEvent         | function      | `function(eventName, ...params) {}`        | For user-defined custom events                  |
+| Option                | Type                         | Default / Example                          | Description                                                                                                                                                                       |
+|-----------------------|------------------------------|--------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                  | string                       | 'layer01'                                  | Unique layer name or identifier                                                                                                                                                   |
+| title                 | string/HTML                  | undefined                                  | Optional: Layer title (can be string or HTML)                                                                                                                                     |
+| width                 | number/string                | undefined                                  | Optional: Width in px or as CSS string                                                                                                                                            |
+| bgStyle               | object                       | `{ classes: 'text-dark', css: {...} }`     | Style for background and text color (see below)                                                                                                                                   |
+| &nbsp;&nbsp;↳ classes | string                       | 'text-dark'                                | Additional CSS classes for the layer                                                                                                                                              |
+| &nbsp;&nbsp;↳ css     | object                       | `{ background: ..., boxShadow: ..., ... }` | Inline CSS styles for the layer background                                                                                                                                        |
+| backdrop              | bool/string                  | true                                       | Show backdrop: `true`, `false`, or `'static'`                                                                                                                                     |
+| url                   | string \| Function (Promise) | undefined                                  | URL für AJAX-Content **oder** Funktion/Promise, die asynchronen Content liefert. Die Funktion muss ein Promise zurückgeben, das aufgelöst wird, sobald der Content verfügbar ist. |
+| refreshable           | bool                         | false                                      | Enable content refresh                                                                                                                                                            |
+| closeable             | bool                         | true                                       | Show close (X) button in header                                                                                                                                                   |
+| expandable            | bool                         | true                                       | Allow layer to be maximized                                                                                                                                                       |
+| queryParams           | function                     | `(params) => params`                       | Modify AJAX query parameters                                                                                                                                                      |
+| onAll                 | function                     | `function(eventName, ...args) {}`          | Callback for all triggered events                                                                                                                                                 |
+| onPostBody            | function                     | `function($content) {}`                    | After content is loaded                                                                                                                                                           |
+| onShow                | function                     | `function() {}`                            | Before layer is shown                                                                                                                                                             |
+| onShown               | function                     | `function() {}`                            | After layer is fully visible                                                                                                                                                      |
+| onHide                | function                     | `function() {}`                            | Before layer is hidden                                                                                                                                                            |
+| onHidden              | function                     | `function() {}`                            | After layer is fully hidden                                                                                                                                                       |
+| onRefresh             | function                     | `function($content) {}`                    | When the layer is refreshed                                                                                                                                                       |
+| onCustomEvent         | function                     | `function(eventName, ...params) {}`        | For user-defined custom events                                                                                                                                                    |
 
 **Usage Example:**
 
@@ -168,15 +171,37 @@ $('#btnLayerExample').bsLayer({
     refreshable: true,
     closeable: true,
     expandable: false,
-    queryParams: function(params) {
+    queryParams: function (params) {
         params.userId = 123;
         return params;
     },
-    onShown: function($content) {
+    onShown: function ($content) {
         console.log('Layer wurde angezeigt');
     },
-    onAll: function(eventName, ...args) {
+    onAll: function (eventName, ...args) {
         console.log('Event:', eventName, args);
+    }
+});
+
+// You can also supply a function to the `url` option that returns a Promise. This allows you to load dynamic content asynchronously, for example via an API call or any custom logic.
+// The function can be defined either as an `async` function or as a regular function returning a Promise. The most important point is that the return value is a Promise that resolves with the HTML/string content.
+$('#btnLayerExample').bsLayer({
+    name: 'promise-layer',
+    title: 'Async Content Layer',
+    width: 600,
+    backdrop: true,
+    // `url` als Promise-Funktion: z.B. dynamisch, asynchron laden
+    url: async function () {
+        return new Promise(function (resolve, reject) {
+            setTimeout(function () {
+                // Beliebige Logik: kann auch AJAX sein
+                resolve('<div class="p-4"><h3>Async loaded content 🚀</h3><p>This content was loaded via Promise!</p></div>');
+            }, 1000);
+        });
+    },
+    refreshable: true,
+    onShown: function ($content) {
+        console.log('Async layer shown');
     }
 });
 ```
@@ -187,20 +212,22 @@ $('#btnLayerExample').bsLayer({
 
 These instance methods can be called on any jQuery element that has been initialized as a layer trigger:
 
-| Method        | Parameters          | Description                                                                               |
-|---------------|---------------------|-------------------------------------------------------------------------------------------|
-| `setTitle`    | `title`             | Dynamically sets the layer’s title (as string or HTML) for the current trigger.           |
-| `show`        | `...args`           | Programmatically opens/displays the layer (simulates a click on the trigger element).     |
-| `refresh`     | `options = {}`      | Reloads or refreshes the layer content, e.g. via AJAX, using supplied options if any.     |
-| `close`       | none                | Closes/hides the layer that belongs to the current trigger element.                       |
+| Method     | Parameters     | Description                                                                           |
+|------------|----------------|---------------------------------------------------------------------------------------|
+| `setTitle` | `title`        | Dynamically sets the layer’s title (as string or HTML) for the current trigger.       |
+| `show`     | `...args`      | Programmatically opens/displays the layer (simulates a click on the trigger element). |
+| `refresh`  | `options = {}` | Reloads or refreshes the layer content, e.g. via AJAX, using supplied options if any. |
+| `close`    | none           | Closes/hides the layer that belongs to the current trigger element.                   |
 
 **Usage Example:**
+
 ```javascript
 $('#myLayerBtn').bsLayer('setTitle', 'New Title');
 $('#myLayerBtn').bsLayer('show');
 $('#myLayerBtn').bsLayer('refresh');
 $('#myLayerBtn').bsLayer('close');
 ```
+
 ## License
 
 Proprietary  
