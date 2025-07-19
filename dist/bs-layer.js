@@ -28,7 +28,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.2',
+        version: '1.0.3',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
@@ -69,7 +69,7 @@
             }
         },
         defaults: {
-            name: 'layer01',
+            name: undefined,
             title: undefined,
             width: undefined,
             bgStyle: {
@@ -142,12 +142,14 @@
             return $layer ?? null;
         },
         utils: {
-            toCamelCase(string) {
+            toCamelCase(string, firstLetterCapitalized = false) {
                 const result = string
                     .split('-')
                     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                     .join('');
-                return result.charAt(0).toLowerCase() + result.slice(1);
+                return firstLetterCapitalized
+                    ? result.charAt(0).toUpperCase() + result.slice(1)
+                    : result.charAt(0).toLowerCase() + result.slice(1);
             },
             getUniqueId(prefix = "bs_layer_") {
                 const randomId = Math.random().toString(36).substring(2, 10);
@@ -325,8 +327,7 @@
 
             // Automatically map the event name to a settings handler and execute it
             // Converts event name to CamelCase + add "on" prefix (e.g., "show-info-window" -> "onShowInfoWindow")
-            const eventFunctionName = `on` + $.bsLayer.utils.toCamelCase(eventName);
-
+            const eventFunctionName = `on` + $.bsLayer.utils.toCamelCase(eventName, true);
             $.bsLayer.utils.executeFunction(settings[eventFunctionName], ...args);
         }
     }

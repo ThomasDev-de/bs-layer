@@ -18,52 +18,51 @@
 <script src="../dist/bs-layer.js"></script>
 <script>
     (function ($) {
-        function onPostBody($loginBtn, $content) {
-            const self = this; // Speichere den äußeren Kontext explizit
-            const $innerButtons = $content.find('#btnLayerRegister');
-            $innerButtons.bsLayer({
-                name: 'register',
-                title: 'Register',
-                onPostBody: function ($registerContent) {
-                    const $innerButtonP = $registerContent.find('#btnLayerPolicy');
-                    $innerButtonP.bsLayer({
-                        width: 500,
-                        backdrop: 'static',
-                        name: 'policy',
-                        title: 'Policy',
-                        width: 400,
-                        onShown: function(_$content) {
-                            $loginBtn.bsLayer('setTitle', 'Login with policy');
-                            // $innerButtons.bsLayer('refresh');
-                            $.bsLayer.customEvent('login-page', 'policy-shown');
-                        },
-                        onAll: function(eventName, ...params) {
-                            // console.log('policy', eventName, params);
-                        }
-                    });
-                }
-            });
-        }
 
         const loginBtn = $('#btnLayerLogin');
         loginBtn.bsLayer({
             name: 'login-page',
-            // backdrop: true,
             refreshable: true,
             title: 'Login',
             queryParams: (params) => {
                 params.foo = 'bar';
                 return params;
             },
-            onPostBody: ($content) => {
-                onPostBody(loginBtn, $content);
+            onPostBody($content){
+                onPostBodyLogin($content)
             },
             onAll(eventName, ...params) {
                 // console.log('login-page', eventName, params);
             }
         });
 
-
+        function onPostBodyLogin($content) {
+            const $innerButtons = $content.find('#btnLayerRegister');
+            $innerButtons.bsLayer({
+                bgStyle: {
+                    classes: 'text-bg-dark'
+                },
+                name: 'register',
+                title: 'Register',
+                onPostBody: function ($registerContent) {
+                    const $innerButtonP = $registerContent.find('#btnLayerPolicy');
+                    $innerButtonP.bsLayer({
+                        bgStyle: {
+                            classes: 'text-bg-warning'
+                        },
+                        width: 500,
+                        backdrop: 'static',
+                        name: 'policy',
+                        title: 'Policy',
+                        width: 400,
+                        onShown: function(_$content) {
+                            loginBtn.bsLayer('setTitle', 'Login with policy');
+                            $.bsLayer.customEvent('login-page', 'policy-shown');
+                        }
+                    });
+                }
+            });
+        }
     }(jQuery));
 </script>
 </body>
