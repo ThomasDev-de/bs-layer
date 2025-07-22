@@ -31,7 +31,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.4',
+        version: '1.0.5',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
@@ -72,6 +72,10 @@
             }
         },
         defaults: {
+            ajax: {
+                method: 'GET',
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+            },
             name: undefined,
             title: undefined,
             width: undefined,
@@ -490,11 +494,12 @@
                 }
             } else {
                 $.bsLayer.onDebug('Settings.url is a string!');
+                const ajaxSettings = $.extend(true, {}, config.ajax, settings.ajax);
                 promise = $.ajax({
                     url: settings.url,
-                    type: config.ajax.method || 'GET',
+                    type: ajaxSettings.method || 'GET',
                     data: query,
-                    contentType: config.ajax.contentType || 'application/x-www-form-urlencoded; charset=UTF-8'
+                    contentType: ajaxSettings.contentType || 'application/x-www-form-urlencoded; charset=UTF-8'
                 });
             }
 
