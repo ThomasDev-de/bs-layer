@@ -1,7 +1,7 @@
 {
   "name": "webcito/bs-layer",
   "description": "A lightweight sliding layer system for jQuery and Bootstrap 5.",
-  "version": "1.0.4",
+  "version": "1.0.3",
   "type": "library",
   "keywords": [
     "bootstrap",

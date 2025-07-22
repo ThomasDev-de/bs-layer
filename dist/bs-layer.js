@@ -29,7 +29,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.4',
+        version: '1.0.3',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
