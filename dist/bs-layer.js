@@ -1,6 +1,8 @@
 (function ($) {
     'use strict';
 
+    const namespace = '.bs.layer';
+    const backdropId = 'layerBackdrop';
 
     const pluginMethods = {
         setTitle: function (title) {
@@ -14,7 +16,7 @@
         show: function (options = {}) {
             const $layerButton = $(this);
             refreshSettings($layerButton, options);
-            $layerButton.trigger('click.bs.layer'); // Event auslösen
+            $layerButton.trigger('click' + namespace); // Event auslösen
         },
         refresh: function (options = {}) {
             const $layerButton = $(this);
@@ -29,7 +31,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.3',
+        version: '1.0.4',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
@@ -200,9 +202,6 @@
     };
 
 
-    const namespace = '.bs.layer';
-    const backdropId = 'layerBackdrop';
-
 
     $.fn.bsLayer = function (optionsOrMethod, ...args) {
         if ($(this).length === 0) {
@@ -257,11 +256,6 @@
     };
 
     function refreshSettings($layerBtn, options = {}) {
-        const $layer = getLayerByButton($layerBtn);
-        if (!$layer.length) {
-            $.bsLayer.onError('Layer with name "' + name + '" not found!');
-            return;
-        }
 
         delete options.name;
 
@@ -278,6 +272,7 @@
             $.bsLayer.onError('Layer with name "' + name + '" not found!');
             return;
         }
+
         refreshSettings($layerBtn, options);
 
         fetchContent($layerBtn, $layer, true).then(function ({content, btn}) {
