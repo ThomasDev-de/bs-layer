@@ -11,8 +11,9 @@
             settings.title = title || '';
             setSettings($layerButton, settings);
         },
-        show: function (...args) {
+        show: function (options = {}) {
             const $layerButton = $(this);
+            refreshSettings($layerButton, options);
             $layerButton.trigger('click.bs.layer'); // Event auslösen
         },
         refresh: function (options = {}) {
@@ -28,7 +29,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.3',
+        version: '1.0.4',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
@@ -255,7 +256,7 @@
         return $layerButton;
     };
 
-    function refresh($layerBtn, options = {}) {
+    function refreshSettings($layerBtn, options = {}) {
         const $layer = getLayerByButton($layerBtn);
         if (!$layer.length) {
             $.bsLayer.onError('Layer with name "' + name + '" not found!');
@@ -267,24 +268,18 @@
         // Default: hole aktuelle Settings
         // console.log('refresh', 'getSetting');
         const settings = getSettings($layerBtn);
+        const newSettings = $.extend(true, {}, settings, options || {});
 
-        // Optionale neue Einstellungen mergen (nur falls übergeben und Typ passt)
-        const {url, ajax, queryParams, title} = options;
-        if (typeof url === "string" || typeof url === "function") {
-            settings.url = url;
+        setSettings($layerBtn, newSettings);
+    }
+    function refresh($layerBtn, options = {}) {
+        const $layer = getLayerByButton($layerBtn);
+        if (!$layer.length) {
+            $.bsLayer.onError('Layer with name "' + name + '" not found!');
+            return;
         }
-        if (ajax && typeof ajax === "object") {
-            settings.ajax = ajax;
-        }
-        if (typeof queryParams === "function") {
-            settings.queryParams = queryParams;
-        }
-        if (typeof title === "string") {
-            settings.title = title;
-        }
+        refreshSettings($layerBtn, options);
 
-
-        setSettings($layerBtn, settings);
         fetchContent($layerBtn, $layer, true).then(function ({content, btn}) {
             $.bsLayer.onDebug('refresh', 'content', content);
             triggerEvent(btn, 'post-body', content);
