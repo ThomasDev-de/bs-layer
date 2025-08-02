@@ -508,76 +508,116 @@
      *                           or rejects with an error message if the operation fails.
      */
     function fetchContent($btnLayer, $layer) {
+        // Log the start of the function
         $.bsLayer.onDebug('fetchContent called');
+
+        // Return a new Promise that either resolves with the content or rejects on failure
         return new Promise((resolve, reject) => {
+            // Retrieve the settings for the provided button layer ($btnLayer)
             const settings = getSettings($btnLayer);
+
+            // Retrieve the global configuration for the plugin
             const config = $.bsLayer.getConfig();
-            const layerTitle = $($layer).find('.layer-title');
-            const layerBody = $($layer).find('.layer-body');
+
+            // Find the title of the layer and its body container
+            const layerTitle = $($layer).find('.layer-title'); // Element representing the layer title
+            const layerBody = $($layer).find('.layer-body');   // Element representing the layer body
+
+            // Set the layer body to display a loading spinner
             layerBody.html(getLoading());
+
+            // Set the layer's title (fallback to an empty string if not provided)
             layerTitle.html(settings.title || '');
 
+            // Verify if the `url` setting exists, as it's required for fetching content
             if (!settings.url) {
-                $.bsLayer.onDebug('Settings.url not defined!');
+                $.bsLayer.onDebug('Settings.url not defined!');   // Debug log for missing URL
                 $.bsLayer.onError('Settings.url not defined!');
-                reject('Settings.url not defined!');
-                return;
+                reject('Settings.urlfetch not defined!');         // Reject the promise with an error message
+                return;                                           // Exit the function
             }
 
+            // Prepare an initial parameter object for the request
             const params = {};
 
+            // If the `queryParams` property in settings is a function, execute it to get query parameters
+            // Otherwise, use the empty `params` object
             const query = typeof settings.queryParams === 'function'
                 ? settings.queryParams(params)
                 : params;
 
+            // Debug log for the query parameters used
             $.bsLayer.onDebug('queryParams', query);
 
-            let promise;
+            let promise; // Declare a variable to hold the promise that will fetch the layer content
+
+            // If `settings.url` is a function, execute it to fetch the data
             if (typeof settings.url === 'function') {
                 $.bsLayer.onDebug('Settings.url is a function!');
                 try {
+                    // Convert the result of the `url` function into a resolved promise
                     promise = Promise.resolve($.bsLayer.utils.executeFunction(settings.url, query));
                 } catch (err) {
+                    // Handle any errors that occur during function execution
                     $.bsLayer.onDebug('Error in fetchContent: ' + err);
                     $.bsLayer.onError('Error in fetchContent: ' + err);
-                    reject(err);
-                    return;
+                    reject(err); // Reject the promise with the error
+                    return;      // Exit the function
                 }
             } else {
+                // If `settings.url` is a string, assume it's a direct URL and fetch it via AJAX
                 $.bsLayer.onDebug('Settings.url is a string!');
+
+                // Merge default AJAX settings with any custom settings from the configuration
                 const ajaxSettings = $.extend(true, {}, config.ajax, settings.ajax);
+
+                // Initiate an AJAX request with the HTTP method, query parameters, and content type
                 promise = $.ajax({
-                    url: settings.url,
-                    type: ajaxSettings.method || 'GET',
-                    data: query,
+                    url: settings.url,                         // The endpoint to request
+                    type: ajaxSettings.method || 'GET',        // HTTP method (default to GET)
+                    data: query,                               // Query parameters for the request
                     contentType: ajaxSettings.contentType || 'application/x-www-form-urlencoded; charset=UTF-8'
                 });
             }
 
+            // Check if the `promise` variable was successfully initialized
             if (promise && typeof promise.then === 'function') {
                 $.bsLayer.onDebug('Promise returned from Settings.url!');
+
+                // When the promise resolves, populate the layer with the content
                 promise
                     .then(function (res) {
-                        // Validate and wrap content if necessary
+                        // Convert the response into a jQuery element
                         let $content = $(res);
+
+                        // Validate and ensure the response can be wrapped in a DOM structure
                         if ($content.length === 0 || !$content[0].nodeType) {
-                            $content = $('<div>').html(res);
+                            $content = $('<div>').html(res); // Wrap plain HTML into a `div`
                         }
 
+                        // Clear existing layer body content and append the new content
                         $(layerBody).empty().append($content);
+
+                        // Debug log for the successfully loaded content
                         $.bsLayer.onDebug('Content loaded:', $content);
+
+                        // Resolve the promise with the loaded content and the original button layer
                         resolve({ content: $content, btn: $btnLayer });
                     })
                     .catch(function (error) {
+                        // Handle errors that occur during the content fetching process
                         $.bsLayer.onDebug('Error loading the layer:', error);
                         $.bsLayer.onError('Error loading the layer:', error);
+
+                        // Reject the promise with the error message
                         reject(error);
                     });
             } else {
-                const errMsg = 'Settings.url muss eine Promise liefernde Funktion oder eine URL sein!';
-                $.bsLayer.onDebug(errMsg);
-                $.bsLayer.onError(errMsg);
-                reject(errMsg);
+                // Handle cases where `settings.url` does not return a valid promise
+                const errMsg = 'Settings.url must be a promise-returning function or a URL!';
+                $.bsLayer.onDebug(errMsg);                       // Debug log the issue
+                $.bsLayer.onError(errMsg);                       // Error log the issue
+                reject(errMsg);                                  // Reject the promise with the error message
             }
         });
     }
