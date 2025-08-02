@@ -109,9 +109,10 @@ $.bsLayer.setConfig({
     fullWidthBreakpoint: 768,    // Default is 576, here changed to 768 px
     animationDuration: 400,      // Layer animation now lasts 400 ms
     icons: {
-        close: 'bi bi-x',        // Different icon for "Close"
+        close: 'bi bi-x',
         maximize: 'bi bi-fullscreen',
-        minimize: 'bi bi-fullscreen-exit'
+        minimize: 'bi bi-fullscreen-exit',
+        refresh: 'bi bi-arrow-clockwise'
     }
 });
 
