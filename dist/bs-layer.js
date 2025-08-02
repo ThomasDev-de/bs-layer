@@ -110,6 +110,7 @@
             onRefresh: function (_$content) {
             },
             onCustomEvent: function (_eventName, ...params) {
+                console.log('onCustomEvent', _eventName, params);
             },
         },
         setAnimated(animated) {
@@ -278,7 +279,7 @@
 
         refreshSettings($layerBtn, options);
 
-        fetchContent($layerBtn, $layer, true).then(function ({content, btn}) {
+        fetchContent($layerBtn, $layer).then(function ({content, btn}) {
             $.bsLayer.onDebug('refresh', 'content', content);
             triggerEvent(btn, 'post-body', content);
             triggerEvent(btn, 'refresh');
@@ -503,11 +504,10 @@
      *
      * @param {jQuery} $btnLayer The button layer element that triggers the fetch operation, used for reference.
      * @param {jQuery} $layer The target layer element where the content will be loaded.
-     * @param {boolean} [triggerRefresh=false] Indicates whether to force-refresh the content even if it has already been fetched.
      * @return {Promise<Object>} A promise that resolves with an object containing the loaded content as a jQuery element and the button layer reference,
      *                           or rejects with an error message if the operation fails.
      */
-    function fetchContent($btnLayer, $layer, triggerRefresh = false) {
+    function fetchContent($btnLayer, $layer) {
         $.bsLayer.onDebug('fetchContent called');
         return new Promise((resolve, reject) => {
             const settings = getSettings($btnLayer);
@@ -794,15 +794,15 @@
             $($layer).addClass('sliding').removeClass('show');
             const btn = getButtonByLayer($layer);
             triggerEvent(btn, 'hide');
-            // Nach der Animation: Layer entfernen
+            // After the animation: remove layer
             setTimeout(() => {
                 $($layer).hide(() => {
-                    $($layer).remove(); // Layer aus DOM entfernen
+                    $($layer).remove(); // Remove layer from a cathedral
 
-                    // Entferne das Layer aus den offenen Stacks
+                    // Remove the layer from the open stacks
                     $.bsLayer.vars.openLayers = $.bsLayer.vars.openLayers.filter(id => id !== layerId);
                     triggerEvent(btn, 'hidden');
-                    $.bsLayer.setAnimated(false); // Animation abgeschlossen
+                    $.bsLayer.setAnimated(false); // Animation completed
                 });
             }, animationDuration);
         } catch (err) {
@@ -822,7 +822,7 @@
     function handleBackdropAndOverflow($layer) {
         $.bsLayer.onDebug('handleBackdropAndOverflow');
         // removes `overflow-hidden` for the current layer
-        $layer.removeClass('overflow-hidden pe-0');
+        $($layer).removeClass('overflow-hidden pe-0');
 
         const remainingLayers = $.bsLayer.vars.openLayers.length - 1; // Current layer not yet removed
 
@@ -835,21 +835,22 @@
             $.bsLayer.onDebug('Remaining layers:', remainingLayers);
             // adjust the backdrop if levels are still open
             const newTopLayerId = $.bsLayer.vars.openLayers[remainingLayers - 1];
-            const $newTopLayer = getLayerById(newTopLayerId);
+            const $newTopLayer = $(getLayerById(newTopLayerId));
             // Setze Z-Index des Backdrops für die neue oberste Ebene
             const zIndex = parseInt($newTopLayer.css('z-index'), 10) - 1;
-            $('#' + backdropId).css({zIndex});
+            const $backdropElement = $('#' + backdropId);
+            $backdropElement.css({zIndex});
 
             // Optional: Backdrop transparent setzen, wenn es für die neue Ebene deaktiviert ist
             const backdropSetting = $newTopLayer.data('bs-backdrop');
             if (backdropSetting === false) {
-                $('#' + backdropId).css({
+                $backdropElement.css({
                     'background-color': 'transparent',
                     'opacity': 0,
                     'pointer-events': 'none',
                 });
             } else {
-                $('#' + backdropId).css({
+                $backdropElement.css({
                     'background-color': '',
                     'opacity': '',
                     'pointer-events': '',
@@ -914,7 +915,7 @@
             return;
         }
         const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
-        const $layer = getLayerById(latestLayerId);
+        const $layer = $(getLayerById(latestLayerId));
         if (!$layer.length) {
             $.bsLayer.onError('no layer found in toggleExpand');
             return;
@@ -953,8 +954,8 @@
         let index = 0;
 
         $.bsLayer.vars.openLayers.forEach(layerId => {
-            const $layer = getLayerById(layerId);
-            const $layerBtn = getButtonByLayer($layer);
+            const $layer = $(getLayerById(layerId));
+            const $layerBtn = $(getButtonByLayer($layer));
             const settings = getSettings($layerBtn);
             const $layerMaxMinBtn = $layer.find('.btn-toggle-full-width');
             const $layerMaxMinBtnIcon = $layerMaxMinBtn.find('i');
@@ -1045,7 +1046,7 @@
                         return;
                     }
                     const latestLayerId = $.bsLayer.vars.openLayers[$.bsLayer.vars.openLayers.length - 1];
-                    const latestLayer = getLayerById(latestLayerId);
+                    const latestLayer = $(getLayerById(latestLayerId));
                     if (!latestLayer.length) {
                         return;
                     }
