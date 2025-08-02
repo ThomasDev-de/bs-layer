@@ -7,7 +7,7 @@
     const pluginMethods = {
         setTitle: function (title) {
             const $layerButton = $(this);
-            const $layer = getLayerByButton($layerButton);
+            const $layer = $(getLayerByButton($layerButton));
             $layer.find('.layer-title').html(title);
             const settings = getSettings($layerButton);
             settings.title = title || '';
@@ -48,8 +48,7 @@
         },
         setConfig(config = {}) {
             if (!this.utils.isValueEmpty(config)) {
-                const newConfig = $.extend(true, {}, this.config, config);
-                this.config = newConfig;
+                this.config = $.extend(true, {}, this.config, config);
             }
         },
         config: {
@@ -133,7 +132,7 @@
                 this.onError('Layer with name "' + name + '" not found!');
                 return;
             }
-            const $layerBtn = getButtonByLayer($layer);
+            const $layerBtn = $(getButtonByLayer($layer));
             if (!$layerBtn.length) {
                 this.onError('Layer button for layer with name "' + name + '" not found!');
                 return;
@@ -226,7 +225,7 @@
             }
         } else {
             $.bsLayer.onDebug(`Method "init" called on bsLayer.`);
-            // Initialisierungsmethode verwenden (vorhandener Code)
+            // Use initialization method (existing code)
             if (!$layerButton.data('layerConfig')) {
                 $.bsLayer.onDebug(`Layer button has no data-layer-config attribute.`);
                 const options = typeof optionsOrMethod === 'object' ? optionsOrMethod : {};
@@ -271,7 +270,7 @@
         setSettings($layerBtn, newSettings);
     }
     function refresh($layerBtn, options = {}) {
-        const $layer = getLayerByButton($layerBtn);
+        const $layer = $(getLayerByButton($layerBtn));
         if (!$layer.length) {
             $.bsLayer.onError('Layer with name "' + name + '" not found!');
             return;
@@ -286,6 +285,14 @@
         });
     }
 
+    /**
+     * Triggers a custom event on the specified button layer and handles associated settings and global event listeners.
+     *
+     * @param {jQuery} $btnLayer - The button layer target where the event will be triggered.
+     * @param {string} eventName - The name of the event to be triggered.
+     * @param {...any} args - Additional arguments to pass along with the event.
+     * @return {void} This method does not return any value.
+     */
     function triggerEvent($btnLayer, eventName, ...args) {
         const $btn = $($btnLayer);
         if (!$btn.data('layerConfig')) {
@@ -326,14 +333,34 @@
         }
     }
 
+    /**
+     * Retrieves the settings configuration associated with the given button layer.
+     *
+     * @param {Object} $btnLayer - The button layer element to retrieve settings from.
+     * @return {Object} The settings configuration object associated with the button layer.
+     */
     function getSettings($btnLayer) {
         return $($btnLayer).data('layerConfig').settings
     }
 
+    /**
+     * Updates the settings for a given button layer.
+     * Assigns the provided settings to the layer configuration.
+     *
+     * @param {jQuery} $btnLayer - The button layer element to update.
+     * @param {object} settings - The new settings to be applied to the button layer.
+     * @return {void} This method does not return a value.
+     */
     function setSettings($btnLayer, settings) {
         $($btnLayer).data('layerConfig').settings = settings;
     }
 
+    /**
+     * Attaches click event handlers to the provided button layer element.
+     *
+     * @param {jQuery} $btnLayer The jQuery object representing the button layer to which the events will be bound.
+     * @return {void} This function does not return a value.
+     */
     function btnEvents($btnLayer) {
         $.bsLayer.onDebug(`Adding events to layer button.`);
         $($btnLayer)
@@ -350,22 +377,20 @@
 
 
     /**
-     * Closes the most recently opened layer, if no animations are currently in progress.
-     * This function optionally checks if the user clicked on the backdrop,
-     * and whether the layer is configured to allow closure via such behavior.
+     * Closes the latest layer if conditions are met.
+     * This includes ensuring no animation is currently active and handling static backdrops.
      *
-     * @param {boolean} [clickedOnBackdrop=false] - Indicates if the user clicked on the backdrop.
-     *                                              If true, the function will check the layer's
-     *                                              backdrop configuration to decide if it should close.
-     * @return {void}
+     * @param {jQuery} $layer - The layer object to be closed.
+     * @param {boolean} [clickedOnBackdrop=false] - Indicates if the layer was triggered for closure by clicking on its backdrop.
+     * @return {void} This function does not return a value.
      */
     function closeLatestLayer($layer, clickedOnBackdrop = false) {
         if ($.bsLayer.vars.isAnimating) {
-            console.warn('Es läuft eine Animation, Schließen wird blockiert.');
-            return; // Blockiere Schließen, wenn Animation läuft
+            console.warn('An animation runs, closing is blocked.');
+            return; // Close to close when animation is running
         }
-        if (clickedOnBackdrop && $layer.data('bs-backdrop') === 'static') {
-            console.warn('Backdrops mit "static" können nicht durch Klick geschlossen werden.');
+        if (clickedOnBackdrop && $($layer).data('bs-backdrop') === 'static') {
+            console.warn('Backdrops with "Static" cannot be closed by clicking.');
             return;
         }
         close($layer);
@@ -404,7 +429,7 @@
         let prevWidth = Math.round(winWidth * 0.8);
         if (countOpenLayers > 1) {
             const prevLayerId = openLayerIds[countOpenLayers - 2];
-            const $prevLayer = getLayerById(prevLayerId);
+            const $prevLayer = $(getLayerById(prevLayerId));
             if ($prevLayer.length && $prevLayer.width()) {
                 prevWidth = $prevLayer.width();
             }
@@ -412,12 +437,23 @@
         return Math.max(prevWidth - config.distanceBetweenLayers, 576);
     }
 
+    /**
+     * Retrieves the current z-index for the next layer to be opened.
+     *
+     * @return {number} The calculated z-index value, determined by the base z-index start value
+     * and the count of currently opened layers.
+     */
     function getCurrentZIndex() {
         const config = $.bsLayer.getConfig();
         const countOpenLayers = $.bsLayer.vars.openLayers.length;
         return config.zIndexStart + countOpenLayers;
     }
 
+    /**
+     * Generates and returns a string representing the HTML for a loading spinner element.
+     *
+     * @return {string} A string containing the HTML markup for the loading spinner.
+     */
     function getLoading() {
         return [
             '<div class="d-flex justify-content-center fs-1 align-items-center h-100 w-100">',
@@ -428,6 +464,12 @@
         ].join('');
     }
 
+    /**
+     * Generates an HTML template for a UI layer with configurable options such as title, closeable, expandable, and refreshable buttons.
+     *
+     * @param {Object} settings - Configuration object specifying the behavior and content of the layer.
+     * @return {string} The HTML string representing the constructed layer template.
+     */
     function getTemplate(settings) {
         const config = $.bsLayer.getConfig();
         const closeableBtn = !settings.closeable ? '' : [
@@ -456,13 +498,22 @@
     }
 
 
+    /**
+     * Fetches and loads content asynchronously into a specified layer element.
+     *
+     * @param {jQuery} $btnLayer The button layer element that triggers the fetch operation, used for reference.
+     * @param {jQuery} $layer The target layer element where the content will be loaded.
+     * @param {boolean} [triggerRefresh=false] Indicates whether to force-refresh the content even if it has already been fetched.
+     * @return {Promise<Object>} A promise that resolves with an object containing the loaded content as a jQuery element and the button layer reference,
+     *                           or rejects with an error message if the operation fails.
+     */
     function fetchContent($btnLayer, $layer, triggerRefresh = false) {
         $.bsLayer.onDebug('fetchContent called');
         return new Promise((resolve, reject) => {
             const settings = getSettings($btnLayer);
             const config = $.bsLayer.getConfig();
-            const layerTitle = $layer.find('.layer-title');
-            const layerBody = $layer.find('.layer-body');
+            const layerTitle = $($layer).find('.layer-title');
+            const layerBody = $($layer).find('.layer-body');
             layerBody.html(getLoading());
             layerTitle.html(settings.title || '');
 
@@ -531,18 +582,42 @@
         });
     }
 
+    /**
+     * Retrieves an HTML layer element by its unique identifier.
+     *
+     * @param {string} id - The unique identifier of the layer to retrieve.
+     * @return {jQuery} A jQuery object representing the layer element with the specified ID.
+     */
     function getLayerById(id) {
         return $(`.bs-layer[id="${id}"]`);
     }
 
+    /**
+     * Retrieves a layer element associated with the specified button element.
+     *
+     * @param {jQuery} $btnLayer - The jQuery object representing the button whose associated layer is being retrieved.
+     * @return {jQuery} The jQuery object representing the associated layer element.
+     */
     function getLayerByButton($btnLayer) {
-        return $(`.bs-layer[id="${$btnLayer.attr('aria-controls')}"]`);
+        return $(`.bs-layer[id="${$($btnLayer).attr('aria-controls')}"]`);
     }
 
+    /**
+     * Retrieves a button element associated with a specific layer.
+     *
+     * @param {jQuery} $layer - The jQuery object representing the layer element.
+     * @return {jQuery} The jQuery object representing the button element associated with the given layer.
+     */
     function getButtonByLayer($layer) {
-        return $('.btn-layer[aria-controls="' + $layer.attr('id') + '"]');
+        return $('.btn-layer[aria-controls="' + $($layer).attr('id') + '"]');
     }
 
+    /**
+     * Retrieves the layer ID associated with a button element by extracting the value of its 'aria-controls' attribute.
+     *
+     * @param {jQuery} $btnLayer - The button element, jQuery object, or selector representing the button.
+     * @return {string|undefined} The value of the 'aria-controls' attribute, representing the layer ID. Returns undefined if the attribute does not exist.
+     */
     function getLayerIdByButton($btnLayer) {
         return $($btnLayer).attr('aria-controls');
     }
@@ -577,7 +652,7 @@
 
             // Check if a layer with the same name is already open (IDs, not objects)
             const nameExists = $.bsLayer.vars.openLayers.some(layerId => {
-                const $layer = getLayerById(layerId);
+                const $layer = $(getLayerById(layerId));
                 return $layer.attr('data-name') === baseName;
             });
             if (nameExists) {
@@ -626,7 +701,7 @@
 
             // Hide overflow for all previous layers
             for (let i = 0; i < $.bsLayer.vars.openLayers.length - 1; i++) {
-                const $layer2 = getLayerById($.bsLayer.vars.openLayers[i]);
+                const $layer2 = $(getLayerById($.bsLayer.vars.openLayers[i]));
                 $layer2.addClass('overflow-hidden pe-0');
             }
 
@@ -684,6 +759,12 @@
         }
     }
 
+    /**
+     * Closes the given layer element with an animated slide-out effect and removes it from the DOM.
+     *
+     * @param {jQuery} $layer - The jQuery object representing the layer to close. Must be a valid and not empty jQuery object.
+     * @return {void} Does not return a value.
+     */
     function close($layer) {
         $.bsLayer.onDebug('close');
         try {
@@ -692,16 +773,16 @@
                 return;
             }
 
-            if (!$layer.length) {
+            if (!$($layer).length) {
                 $.bsLayer.onDebug('No layer found to close!');
                 $.bsLayer.onError('No layer found to close!');
                 return;
             }
 
             $.bsLayer.setAnimated(true);
-            const layerId = $layer.attr('id');
+            const layerId = $($layer).attr('id');
             const windowWidth = window.innerWidth;
-            const width = $layer.outerWidth() || 0;
+            const width = $($layer).outerWidth() || 0;
             // Dynamische Animationsdauer berechnen:
             const animationDuration = Math.round($.bsLayer.getConfig().animationDuration * (width / windowWidth));
 
@@ -709,14 +790,14 @@
             handleBackdropAndOverflow($layer);
 
             // Slide-out-Animation starten
-            $layer.css('transition', `right ${animationDuration}ms ease-in-out`).css('right', `-${width}px`);
-            $layer.addClass('sliding').removeClass('show');
+            $($layer).css('transition', `right ${animationDuration}ms ease-in-out`).css('right', `-${width}px`);
+            $($layer).addClass('sliding').removeClass('show');
             const btn = getButtonByLayer($layer);
             triggerEvent(btn, 'hide');
             // Nach der Animation: Layer entfernen
             setTimeout(() => {
-                $layer.hide(() => {
-                    $layer.remove(); // Layer aus DOM entfernen
+                $($layer).hide(() => {
+                    $($layer).remove(); // Layer aus DOM entfernen
 
                     // Entferne das Layer aus den offenen Stacks
                     $.bsLayer.vars.openLayers = $.bsLayer.vars.openLayers.filter(id => id !== layerId);
@@ -730,6 +811,14 @@
         }
     }
 
+    /**
+     * Handles the backdrop and overflow state for modal-like layers in the UI.
+     * It adjusts the backdrop's z-index, visibility, and resets overflow-hidden classes
+     * based on the current state of open layers.
+     *
+     * @param {jQuery} $layer The jQuery object representing the layer being closed or updated.
+     * @return {void} Does not return anything.
+     */
     function handleBackdropAndOverflow($layer) {
         $.bsLayer.onDebug('handleBackdropAndOverflow');
         // removes `overflow-hidden` for the current layer
@@ -903,6 +992,12 @@
         });
     }
 
+    /**
+     * Initializes event listeners for global interactions with layers and handles resizing, button clicks,
+     * dismiss actions, backdrop clicks, and keyboard events (e.g., `Escape` key functionality).
+     *
+     * @return {void} This function does not return a value. It sets up global event handlers for user interactions with layers.
+     */
     function globalEvents() {
         function debounce(func, wait) {
             let timeout;
@@ -962,7 +1057,6 @@
                 }
             }
         });
-
     }
 })
 (jQuery);
