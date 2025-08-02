@@ -31,7 +31,7 @@
 
     // noinspection JSUnusedGlobalSymbols
     $.bsLayer = {
-        version: '1.0.5',
+        version: '1.0.6',
         onDebug($message, ...params) {
             if ($.bsLayer.config.debug) {
                 console.log('[debug][bsLayer]: ', $message, ...params);
@@ -507,10 +507,15 @@
                 $.bsLayer.onDebug('Promise returned from Settings.url!');
                 promise
                     .then(function (res) {
-                        const $content = $(res);
+                        // Validate and wrap content if necessary
+                        let $content = $(res);
+                        if ($content.length === 0 || !$content[0].nodeType) {
+                            $content = $('<div>').html(res);
+                        }
+
                         $(layerBody).empty().append($content);
                         $.bsLayer.onDebug('Content loaded:', $content);
-                        resolve({content: $content, btn: $btnLayer});
+                        resolve({ content: $content, btn: $btnLayer });
                     })
                     .catch(function (error) {
                         $.bsLayer.onDebug('Error loading the layer:', error);

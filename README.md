@@ -66,7 +66,7 @@ const layerLogin = $('#layerLogin').bsLayer({
 // You can send your own events to the layer
 $.bsLayer.customEvent('login-layer', 'event-name', ...params);
 
-// oder schließe alle Schichten mit einmal
+// Or close all layers with once
 $.bsLayer.closeAll();
 
 ```
@@ -117,7 +117,7 @@ $.bsLayer.setConfig({
 });
 
 // Optional: Overwrite the global onError callback function
-$.bsLayer.config.onError = function ($msg) {
+$.bsLayer.onError = function ($msg) {
     // Custom error handling
     alert('Layer error: ' + $msg);
 };
