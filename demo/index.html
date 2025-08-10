@@ -28,28 +28,25 @@
                 params.foo = 'bar';
                 return params;
             },
-            onPostBody($content){
-                onPostBodyLogin($content)
-            },
-            onAll(eventName, ...params) {
-                // console.log('login-page', eventName, params);
+            onPostBody:onPostBodyLogin,
+            onCustomEvent(eventName, ...params) {
+                switch (eventName) {
+                    case 'policy-shown':
+                        console.log('policy-shown', params);
+                        break;
+                }
             }
         });
 
         function onPostBodyLogin($content) {
             const $innerButtons = $content.find('#btnLayerRegister');
             $innerButtons.bsLayer({
-                bgStyle: {
-                    classes: 'text-bg-dark'
-                },
                 name: 'register',
                 title: 'Register',
+                backdrop: false,
                 onPostBody: function ($registerContent) {
                     const $innerButtonP = $registerContent.find('#btnLayerPolicy');
                     $innerButtonP.bsLayer({
-                        bgStyle: {
-                            classes: 'text-bg-warning'
-                        },
                         width: 500,
                         backdrop: 'static',
                         name: 'policy',
