@@ -1,21 +1,31 @@
-<dic class="d-flex justify-content-center h-100 w-100 align-items-center">
-    <form>
-        <h2 class="mb-4">Login</h2>
-        <div class="mb-3">
-            <label for="exampleInputEmail1" class="form-label">Email address</label>
-            <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
-            <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+<div class="d-flex justify-content-center h-100 w-100 align-items-center p-4">
+    <div class="w-100" style="max-width: 400px;">
+        <div class="text-center mb-4">
+            <i class="bi bi-person-circle display-1 text-primary"></i>
+            <h2 class="mt-2">Welcome Back</h2>
+            <p class="text-secondary">Please enter your details</p>
         </div>
-        <div class="mb-3">
-            <label for="exampleInputPassword1" class="form-label">Password</label>
-            <input type="password" class="form-control" id="exampleInputPassword1">
-        </div>
-        <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="exampleCheck1">
-            <label class="form-check-label" for="exampleCheck1">Check me out</label>
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <button id="btnLayerRegister" type="button" data-url="register.html" class="btn btn-outline-success">Register now</button>
-        <button data-bs-dismiss="layer" type="button" class="btn btn-outline-secondary">Cancel</button>
-    </form>
-</dic>
+        <form>
+            <div class="form-floating mb-3">
+                <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
+                <label for="floatingInput">Email address</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
+                <label for="floatingPassword">Password</label>
+            </div>
+            <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                <label class="form-check-label text-secondary" for="flexCheckDefault">
+                    Remember me
+                </label>
+            </div>
+            <button class="btn btn-primary w-100 py-2 mb-3 rounded-pill shadow-sm" type="submit">Sign in</button>
+            <div class="text-center">
+                <p class="small text-secondary mb-3">Don't have an account?</p>
+                <button id="btnLayerRegister" type="button" data-url="register.html" class="btn btn-outline-success w-100 rounded-pill mb-3">Create account</button>
+                <button data-bs-dismiss="layer" type="button" class="btn btn-link text-secondary text-decoration-none small">Close panel</button>
+            </div>
+        </form>
+    </div>
+</div>

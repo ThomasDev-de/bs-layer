@@ -1,25 +1,36 @@
-<div class="d-flex justify-content-center h-100 w-100 align-items-center">
-    <form class="form-signin" action="register.php" method="post">
-        <h2 class="mb-4">Register</h2>
-        <div class="form-floating mb-3">
-            <input type="text" class="form-control" id="floatingUsername" placeholder="Username" required>
-            <label for="floatingUsername">Username</label>
+<div class="d-flex justify-content-center h-100 w-100 align-items-center p-4">
+    <div class="w-100" style="max-width: 400px;">
+        <div class="text-center mb-4">
+            <i class="bi bi-person-plus display-1 text-success"></i>
+            <h2 class="mt-2">Create Account</h2>
+            <p class="text-secondary">Join our community today</p>
         </div>
-        <div class="form-floating mb-3">
-            <input type="email" class="form-control" id="floatingEmail" placeholder="Email" required>
-            <label for="floatingEmail">Email</label>
-        </div>
-        <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="floatingPassword" placeholder="Password" required>
-            <label for="floatingPassword">Password</label>
-        </div>
-        <div class="form-floating mb-3">
-            <input type="password" class="form-control" id="floatingConfirmPassword" placeholder="Confirm password" required>
-            <label for="floatingConfirmPassword">Confirm password</label>
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <button id="btnLayerPolicy" type="button" data-url="policy.html" class="btn btn-link">Privacy policy</button>
-
-        <button data-bs-dismiss="layer" type="button" class="btn btn-outline-secondary">Cancel</button>
-    </form>
+        <form class="form-signin" action="register.php" method="post">
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="floatingUsername" placeholder="Username" required>
+                <label for="floatingUsername">Username</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="email" class="form-control" id="floatingEmail" placeholder="Email" required>
+                <label for="floatingEmail">Email address</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="floatingPassword" placeholder="Password" required>
+                <label for="floatingPassword">Password</label>
+            </div>
+            <div class="form-floating mb-4">
+                <input type="password" class="form-control" id="floatingConfirmPassword" placeholder="Confirm password" required>
+                <label for="floatingConfirmPassword">Confirm password</label>
+            </div>
+            
+            <button type="submit" class="btn btn-success w-100 py-2 mb-3 rounded-pill shadow-sm">Sign up</button>
+            
+            <div class="text-center">
+                <p class="small text-secondary mb-2">By registering, you agree to our</p>
+                <button id="btnLayerPolicy" type="button" data-url="policy.html" class="btn btn-link btn-sm p-0 mb-3 text-decoration-none fw-bold">Privacy Policy</button>
+                <hr class="my-3">
+                <button data-bs-dismiss="layer" type="button" class="btn btn-link text-secondary text-decoration-none small">Back to login</button>
+            </div>
+        </form>
+    </div>
 </div>

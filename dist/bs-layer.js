@@ -79,9 +79,9 @@
             title: undefined,
             width: undefined,
             bgStyle: {
-                classes: 'text-dark',
+                classes: '',
                 css: {
-                    background: 'rgba(255, 255, 255, 0.74)',
+                    backgroundColor: 'rgba(var(--bs-body-bg-rgb), 0.74)',
                     boxShadow: '0 16px 80px rgba(0, 0, 0, 0.7)',
                     backdropFilter: 'blur(9.1px)',
                     WebkitBackdropFilter: 'blur(9.1px)',
@@ -725,7 +725,7 @@
 
             const $layer = $('<div>', {
                 'data-bs-backdrop': layerBackdrop,
-                class: 'position-fixed  top-0 h-100 rounded-start-5 bs-layer sliding ' + backgroundClasses,
+                class: 'position-fixed top-0 h-100 rounded-start-5 bs-layer sliding ' + backgroundClasses,
                 'data-name': baseName,
                 id: layerId,
                 html: getTemplate(settings),

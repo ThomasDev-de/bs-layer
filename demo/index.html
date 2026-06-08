@@ -1,41 +1,179 @@
 <!doctype html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$.fn.bsLayer</title>
+    <title>$.fn.bsLayer - Professional Bootstrap Layers</title>
     <link href="../vendor/twbs/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="../vendor/twbs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bs-primary-rgb: 13, 110, 253;
+        }
+        .hero-section {
+            padding: 100px 0;
+            background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.1) 0%, rgba(var(--bs-primary-rgb), 0.05) 100%);
+            border-bottom: 1px solid rgba(var(--bs-primary-rgb), 0.1);
+        }
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: .75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+    </style>
 </head>
 <body>
-<div class="container py-5">
-    <h1>$.fn.bsLayer</h1>
-    <a id="btnLayerLogin" data-url="login.html" href="#" class="btn btn-primary">Open a layer via link</a>
-</div>
+
+<nav class="navbar navbar-expand-lg sticky-top bg-body-tertiary border-bottom">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#">
+            <i class="bi bi-layers-half me-2"></i>bsLayer
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                <li class="nav-item"><a class="nav-link" href="#examples">Examples</a></li>
+                <li class="nav-item"><a class="nav-link" href="#usage">Usage</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<header class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-3 fw-bold mb-4">Beautiful Sliding Layers</h1>
+        <p class="lead mb-5 text-secondary mx-auto" style="max-width: 700px;">
+            A lightweight jQuery plugin for Bootstrap 5 that creates stunning, mobile-friendly sliding side-panels with built-in Glassmorphism and AJAX support.
+        </p>
+        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+            <button id="btnLayerHero" data-url="login.html" class="btn btn-primary btn-lg px-5 rounded-pill shadow">Try Live Demo</button>
+            <a href="#usage" class="btn btn-outline-secondary btn-lg px-5 rounded-pill">Documentation</a>
+        </div>
+    </div>
+</header>
+
+<main class="container py-5">
+    <section id="features" class="py-5">
+        <div class="row g-4 py-5 row-cols-1 row-cols-lg-3 text-center">
+            <div class="feature col">
+                <div class="feature-icon bg-primary bg-gradient text-white mx-auto shadow-sm">
+                    <i class="bi bi-magic"></i>
+                </div>
+                <h3 class="fs-4 fw-bold">Glassmorphism</h3>
+                <p class="text-secondary">Elegant semi-transparent backgrounds with backdrop blur that automatically adapt to light and dark themes.</p>
+            </div>
+            <div class="feature col">
+                <div class="feature-icon bg-success bg-gradient text-white mx-auto shadow-sm">
+                    <i class="bi bi-stack"></i>
+                </div>
+                <h3 class="fs-4 fw-bold">Infinite Nesting</h3>
+                <p class="text-secondary">Open layers within layers with automatic width management and intelligent z-index handling.</p>
+            </div>
+            <div class="feature col">
+                <div class="feature-icon bg-info bg-gradient text-white mx-auto shadow-sm">
+                    <i class="bi bi-phone"></i>
+                </div>
+                <h3 class="fs-4 fw-bold">Fully Responsive</h3>
+                <p class="text-secondary">Optimized for mobile with full-width transitions and smooth animations tailored for any screen size.</p>
+            </div>
+        </div>
+    </section>
+
+    <hr class="my-5 opacity-10">
+
+    <section id="examples" class="py-5">
+        <h2 class="display-6 fw-bold mb-4 text-center">Interactive Examples</h2>
+        <div class="row g-4 mt-2">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-person-circle display-5 mb-3 text-primary"></i>
+                        <h5>AJAX Login</h5>
+                        <p class="small text-secondary mb-4">Classic login form loaded via AJAX with nested registration and policy layers.</p>
+                        <button id="btnLayerLogin" data-url="login.html" class="btn btn-outline-primary w-100 rounded-pill">Open Login</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-sliders display-5 mb-3 text-success"></i>
+                        <h5>Custom Width</h5>
+                        <p class="small text-secondary mb-4">Demonstrate a layer with a specific width (e.g. 400px) and static backdrop.</p>
+                        <button id="btnLayerCustom" data-url="login.html" class="btn btn-outline-success w-100 rounded-pill">Open Custom</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-x-circle display-5 mb-3 text-danger"></i>
+                        <h5>No Backdrop</h5>
+                        <p class="small text-secondary mb-4">A lightweight layer without a background overlay, allowing interaction with the page.</p>
+                        <button id="btnLayerNoBackdrop" data-url="login.html" class="btn btn-outline-danger w-100 rounded-pill">Open Lightweight</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="usage" class="py-5">
+        <h2 class="display-6 fw-bold mb-4">Quick Start</h2>
+        <p>Include jQuery, Bootstrap, and bsLayer, then initialize via JavaScript:</p>
+        <pre><code class="language-javascript">$('#myButton').bsLayer({
+    title: 'My Layer',
+    url: 'content.html',
+    width: 600
+});</code></pre>
+    </section>
+</main>
+
+<footer class="py-5 mt-5 bg-body-tertiary border-top">
+    <div class="container text-center">
+        <p class="text-secondary mb-0">&copy; 2026 $.fn.bsLayer Plugin. All rights reserved.</p>
+        <p class="small text-muted">Designed for professional web applications.</p>
+    </div>
+</footer>
 
 <script src="../vendor/components/jquery/jquery.min.js"></script>
 <script src="../vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="../dist/bs-layer.js"></script>
 <script>
     (function ($) {
-
-        const loginBtn = $('#btnLayerLogin');
+        // bsLayer Examples
+        const loginBtn = $('#btnLayerLogin, #btnLayerHero');
         loginBtn.bsLayer({
             name: 'login-page',
             refreshable: true,
             title: 'Login',
-            queryParams: (params) => {
-                params.foo = 'bar';
-                return params;
-            },
-            onPostBody:onPostBodyLogin,
-            onCustomEvent(eventName, ...params) {
-                switch (eventName) {
-                    case 'policy-shown':
-                        console.log('policy-shown', params);
-                        break;
-                }
-            }
+            onPostBody: onPostBodyLogin
+        });
+
+        $('#btnLayerCustom').bsLayer({
+            name: 'custom-width',
+            title: 'Custom Settings',
+            width: 450,
+            backdrop: 'static'
+        });
+
+        $('#btnLayerNoBackdrop').bsLayer({
+            name: 'no-backdrop',
+            title: 'No Backdrop',
+            backdrop: false
         });
 
         function onPostBodyLogin($content) {
@@ -51,10 +189,8 @@
                         backdrop: 'static',
                         name: 'policy',
                         title: 'Policy',
-                        width: 400,
                         onShown: function(_$content) {
-                            loginBtn.bsLayer('setTitle', 'Login with policy');
-                            $.bsLayer.customEvent('login-page', 'policy-shown');
+                            $('#btnLayerLogin').bsLayer('setTitle', 'Login with policy');
                         }
                     });
                 }
