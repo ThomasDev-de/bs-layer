@@ -173,6 +173,17 @@
             }
         });
 
+        // Prevent form submission and show data
+        $(document).on('submit', '.bs-layer form', function (e) {
+            e.preventDefault();
+            const formData = $(this).serializeArray();
+            let message = "Form submission intercepted!\n\nData that would be sent:\n";
+            formData.forEach(item => {
+                message += `${item.name}: ${item.value}\n`;
+            });
+            alert(message);
+        });
+
         // bsLayer Examples
         const loginBtn = $('#btnLayerLogin, #btnLayerHero');
         loginBtn.bsLayer({
