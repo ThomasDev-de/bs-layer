@@ -154,6 +154,25 @@
 <script src="../dist/bs-layer.js"></script>
 <script>
     (function ($) {
+        // Smooth scrolling for nav links
+        $('.nav-link[href^="#"], .btn[href^="#"]').on('click', function (e) {
+            const target = $(this.getAttribute('href'));
+            if (target.length) {
+                e.preventDefault();
+
+                // Close mobile menu if open
+                const navarCollapse = $('#navbarNav');
+                if (navarCollapse.hasClass('show')) {
+                    bootstrap.Collapse.getInstance(navarCollapse[0]).hide();
+                }
+
+                // Smooth scroll to target
+                $('html, body').stop().animate({
+                    scrollTop: target.offset().top - 70 // Adjust for sticky navbar height
+                }, 800);
+            }
+        });
+
         // bsLayer Examples
         const loginBtn = $('#btnLayerLogin, #btnLayerHero');
         loginBtn.bsLayer({
